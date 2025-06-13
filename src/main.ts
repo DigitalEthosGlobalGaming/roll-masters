@@ -9,6 +9,7 @@ import { TestUserInterfaceScene } from "@src/scenes/test/user-interface/user-int
 import { SoundManager } from "@src/sound-manager";
 import { PrestigeScene } from "./scenes/prestige.scene";
 import { SettingsScene } from "./scenes/settings.scene";
+import { OtherScene } from "./scenes/other.scene";
 
 async function waitForFontLoad(font: string, timeout = 2000, interval = 100) {
   return new Promise((resolve, reject) => {
@@ -43,13 +44,14 @@ waitForFontLoad("24px DS-DIGI").then(() => {
       UpdatesScene,
       TestUserInterfaceScene,
       PrestigeScene,
-      SettingsScene
+      SettingsScene,
+      OtherScene
     },
   });
 
   const loader = new GameLoader();
   game.start(loader).then(() => {
-    game.goToScene("TestUserInterfaceScene");
+    game.goToScene("GameScene");
   });
 
   document.addEventListener("click", () => {

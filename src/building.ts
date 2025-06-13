@@ -1,9 +1,10 @@
-import { GameScene } from "@src/scenes/game.scene";
 import * as ex from "excalibur";
 import { GridSpace } from "./grid-system/grid-space";
 import { Player } from "./player-systems/player";
+import { DiceGameScene } from "./scenes/dice-game.scene";
 import { Serializable } from "./systems/save-system";
 
+console.log("T");
 export class Building extends ex.Actor implements Serializable {
   static serializeName: string = "Building";
   friendlyName: string = "Building";
@@ -32,7 +33,7 @@ export class Building extends ex.Actor implements Serializable {
     return this.gridSpace.gridPos ?? ex.vec(0, 0);
   }
   get level() {
-    if (this.scene instanceof GameScene) {
+    if (this.scene instanceof DiceGameScene) {
       return this.scene;
     }
     throw new Error("Scene is not a game scene");
@@ -183,7 +184,18 @@ export class Building extends ex.Actor implements Serializable {
 
   onTick(_delta: number) { }
 
-  onBuild() { }
+  build() {
+    const speed = 0.75;
+    const scale = 1.5;
+    this.scale = ex.vec(scale, scale);
+
+    // this.actions.scaleTo(ex.vec(scale, scale), ex.vec(speed, speed));
+    this.actions.scaleTo(ex.vec(1, 1), ex.vec(speed, speed));
+    this.onBuild();
+  }
+  onBuild() {
+
+  }
 
   trigger() {
     this.onTrigger();

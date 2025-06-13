@@ -1,10 +1,9 @@
-import { ExtendedKeyEvent } from "@src/input/extended-key-event";
 import { DiceSaveSystem } from "@src/dice-save-system";
-import { DiceGameGridSystem } from "@src/grid-system/grid-system-actor";
+import { ExtendedKeyEvent } from "@src/input/extended-key-event";
 import { Level } from "@src/level";
 import { Player } from "@src/player-systems/player";
-import { Serializable } from "@src/systems/save-system";
 import { NotificationSystem } from "@src/systems/notification.system";
+import { Serializable } from "@src/systems/save-system";
 import * as ex from "excalibur";
 
 export class GameScene extends Level implements Serializable {
@@ -15,11 +14,8 @@ export class GameScene extends Level implements Serializable {
   }
 
   previouslyLoaded: boolean = false;
-  score: number = 0;
-  best: number = 0;
+
   random = new ex.Random();
-  gridSystem: DiceGameGridSystem | null = null;
-  gridColor = new ex.Color(255 * 0, 255 * 0.1, 255 * 0.1, 1);
   saveSystem!: DiceSaveSystem;
   notificationSystem!: NotificationSystem;
   autosaveTimer: ex.Timer | null = null;
@@ -83,7 +79,6 @@ export class GameScene extends Level implements Serializable {
 
   preLoad(): void {
     this?.player?.kill();
-    this?.gridSystem?.kill();
     if (this.timer != null) {
       this.timer?.cancel();
       this.removeTimer(this.timer);
@@ -94,29 +89,18 @@ export class GameScene extends Level implements Serializable {
     this.player = this.entities.find((e) => {
       return e instanceof Player;
     });
-    let gridSystem = this.entities.find((e) => {
-      return e instanceof DiceGameGridSystem;
-    });
-    if (gridSystem != null) {
-      this.gridSystem = gridSystem;
-    }
     let timer = new ex.Timer({
       fcn: () => {
-        if (this.gridSystem == null) {
-          this.gridSystem = new DiceGameGridSystem();
-          this.add(this.gridSystem);
-        }
-        this.gridSystem.size = new ex.Vector(32, 32);
-        this.gridSystem.spaceSize = new ex.Vector(32, 32);
+        this.preInitialise();
 
         if (this.player == null) {
           this.player = new Player();
           this.player.score = 10;
           this.add(this.player);
-          const gridSize = this.gridSystem.getBounds().center;
-          this.player.wishPosition = gridSize.clone();
         }
-        this.resizeGrid();
+
+        this.postInitialise();
+
 
         this.inputSystem.paused = false;
       },
@@ -126,16 +110,12 @@ export class GameScene extends Level implements Serializable {
     timer.start();
   }
 
-  resizeGrid() {
-    if (this.gridSystem == null) {
-      return;
-    }
-    const defaultSize = 16;
-    const gridSize = this.player?.getUpgrade("GridSize")?.value ?? 0;
-    this.gridSystem.size = new ex.Vector(
-      gridSize + defaultSize,
-      gridSize + defaultSize
-    );
+  postInitialise() {
+
+  }
+
+  preInitialise() {
+
   }
 
   onKeyUp(evt: ExtendedKeyEvent) {
@@ -146,63 +126,4 @@ export class GameScene extends Level implements Serializable {
   }
 
   deserialize(_data: any): void { }
-
-  onPreDraw(ctx: ex.ExcaliburGraphicsContext, elapsed: number): void {
-    const gridBounds = this.gridSystem?.getBounds();
-    if (gridBounds == null) {
-      return;
-    }
-    const position = gridBounds?.topLeft;
-    const width = gridBounds?.width;
-    const height = gridBounds?.height;
-
-    const cameraTopLeft = this.camera.viewport.topLeft;
-
-    ctx.drawRectangle(
-      position.clone().sub(cameraTopLeft),
-      width,
-      height,
-      this.gridColor
-    );
-    super.onPreDraw(ctx, elapsed);
-  }
-
-  prestige() {
-    let player = this.player;
-    if (player == null) {
-      throw new Error("Player is not defined");
-    }
-    let prestigePoints = Math.floor(
-      player.currentPrestigeScore / 1000000
-    );
-    player.currentPrestigeScore = 0;
-    player.prestigePoints =
-      Math.floor(player.prestigePoints + prestigePoints);
-
-    player.totalPrestiges = Math.floor(player.totalPrestiges + 1);
-    player.score = player.totalPrestiges * 100 + 10;
-    for (const i in player.data) {
-      if (i.startsWith("actions.")) {
-        player.data[i] = false;
-      }
-      if (i.startsWith("research.")) {
-        player.data[i] = false;
-      }
-    }
-    for (const i in player.upgrades) {
-      const upgrade = player.upgrades[i];
-      if (upgrade.type == "RESEARCH") {
-        player.upgrades[i].level = 0;
-      }
-    }
-
-    this.gridSystem?.clearAll();
-    this.gridSystem?.kill();
-    this.save();
-    player.kill();
-    this.player = undefined;
-    this.gridSystem = null;
-    this.previouslyLoaded = false;
-    this.engine.goToScene("PrestigeScene");
-  }
 }

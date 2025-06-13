@@ -1,16 +1,19 @@
+
+import { Building } from "./building";
+import { Bishop } from "@src/buildings/bishop";
+import { WanderingKnight } from "@src/buildings/wandering-knight";
 import { Scene } from "excalibur";
 import { Dice } from "./buildings/dice";
 import { Roller } from "./buildings/roller";
+import { Rook } from "./buildings/rook";
 import { GridSpace } from "./grid-system/grid-space";
 import { DiceGameGridSystem } from "./grid-system/grid-system-actor";
 import { Player } from "./player-systems/player";
 import { SaveSystem } from "./systems/save-system";
-import { WanderingKnight } from "@src/buildings/wandering-knight";
-import { Bishop } from "@src/buildings/bishop";
-import { Rook } from "./buildings/rook";
 
 // This needs to be done because the classes themselves get minimized and the names are changed
 const classes = {
+  Building,
   Player: Player,
   Dice: Dice,
   Roller: Roller,

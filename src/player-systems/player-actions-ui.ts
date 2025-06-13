@@ -4,7 +4,7 @@ import { Button } from "@src/ui/elements/button";
 import { Panel } from "@src/ui/panel";
 import * as ex from "excalibur";
 import { Player } from "./player";
-import { PlayerAction, playerActions } from "./player-actions";
+import { PlayerAction, getPlayerActions } from "./player-actions";
 
 export class PlayerActionButton extends Button {
   _action: PlayerAction | null = null;
@@ -98,7 +98,7 @@ export class PlayerActionsUi extends Panel {
     return this.level.player;
   }
   get playerActions(): PlayerAction[] {
-    return playerActions.filter((a) => a.unlocked);
+    return getPlayerActions().filter((a) => a.unlocked);
   }
 
   buttons: PlayerActionButton[] = [];
@@ -110,7 +110,7 @@ export class PlayerActionsUi extends Panel {
 
   get currentAction(): PlayerAction | null {
     return (
-      playerActions.find((a) => a.code == this.player.currentAction) ?? null
+      getPlayerActions().find((a) => a.code == this.player.currentAction) ?? null
     );
   }
   set currentAction(value: PlayerAction) {
@@ -165,7 +165,7 @@ export class PlayerActionsUi extends Panel {
       this.buttons.push(button);
     }
     if (this.currentAction == null) {
-      this.changeAction(playerActions[0]);
+      this.changeAction(this.playerActions[0]);
       return;
     }
   }

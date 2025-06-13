@@ -25,13 +25,13 @@ export enum PlayerActionTypes {
 
 export type PlayerAction =
   | {
-      name: string;
-      code: PlayerActions;
-      type: PlayerActionTypes.MENU;
-      image: ImageSource;
-      tooltip: string;
-      unlocked?: boolean;
-    }
+    name: string;
+    code: PlayerActions;
+    type: PlayerActionTypes.MENU;
+    image: ImageSource;
+    tooltip: string;
+    unlocked?: boolean;
+  }
   | PlayerActionBuildable;
 
 type PlayerActionBuildable = {
@@ -47,85 +47,95 @@ type PlayerActionBuildable = {
   tooltip: string;
 };
 
-export const playerActions: PlayerAction[] = [
-  {
-    code: "NEWDICE",
-    image: Resources.DiceOut,
-    name: "Buy Dice",
-    type: PlayerActionTypes.BUILDABLE,
-    building: {
-      cost: () => 10,
-      classRef: Dice,
+let playerActions: PlayerAction[] = [];
+
+
+export function getPlayerActions() {
+  if (playerActions.length > 0) {
+    return playerActions;
+  }
+  playerActions = [
+    {
+      code: "NEWDICE",
+      image: Resources.DiceOut,
+      name: "Buy Dice",
+      type: PlayerActionTypes.BUILDABLE,
+      building: {
+        cost: () => 10,
+        classRef: Dice,
+      },
+      unlocked: true,
+      tooltip:
+        "10⚡︎ - Will roll to generate income.\n         Click to roll once placed.",
     },
-    unlocked: true,
-    tooltip:
-      "10⚡︎ - Will roll to generate income.\n         Click to roll once placed.",
-  },
-  {
-    code: "NEWROLLER",
-    image: Resources.ChessPawn,
-    name: "Buy Pawn",
-    type: PlayerActionTypes.BUILDABLE,
-    unlocked: false,
-    building: {
-      cost: () => 100,
-      classRef: Roller,
+    {
+      code: "NEWROLLER",
+      image: Resources.ChessPawn,
+      name: "Buy Pawn",
+      type: PlayerActionTypes.BUILDABLE,
+      unlocked: false,
+      building: {
+        cost: () => 100,
+        classRef: Roller,
+      },
+      tooltip: "100⚡︎ - Every 10 seconds will roll all touching dice.",
     },
-    tooltip: "100⚡︎ - Every 10 seconds will roll all touching dice.",
-  },
-  {
-    code: "NEWKNIGHT",
-    image: Resources.ChessKnight,
-    name: "Buy Wandering Knight",
-    type: PlayerActionTypes.BUILDABLE,
-    building: {
-      cost: () => 1000,
-      classRef: WanderingKnight,
+    {
+      code: "NEWKNIGHT",
+      image: Resources.ChessKnight,
+      name: "Buy Wandering Knight",
+      type: PlayerActionTypes.BUILDABLE,
+      building: {
+        cost: () => 1000,
+        classRef: WanderingKnight,
+      },
+      tooltip: "1000⚡︎ - Moves around the board, strenghtening dice.",
     },
-    tooltip: "1000⚡︎ - Moves around the board, strenghtening dice.",
-  },
-  {
-    code: "ROOK",
-    image: Resources.ChessRook,
-    name: "Buy Rook",
-    type: PlayerActionTypes.BUILDABLE,
-    building: {
-      cost: () => 125000,
-      classRef: Rook,
+    {
+      code: "ROOK",
+      image: Resources.ChessRook,
+      name: "Buy Rook",
+      type: PlayerActionTypes.BUILDABLE,
+      building: {
+        cost: () => 125000,
+        classRef: Rook,
+      },
+      tooltip:
+        "125000 - Moves to a random space through buildings. Adding multipliers to dice passed.",
     },
-    tooltip:
-      "125000 - Moves to a random space through buildings. Adding multipliers to dice passed.",
-  },
-  {
-    code: "BISHOP",
-    image: Resources.ChessBishop,
-    name: "Buy Bishop",
-    type: PlayerActionTypes.BUILDABLE,
-    unlocked: false,
-    building: {
-      cost: () => 10000,
-      classRef: Bishop,
+    {
+      code: "BISHOP",
+      image: Resources.ChessBishop,
+      name: "Buy Bishop",
+      type: PlayerActionTypes.BUILDABLE,
+      unlocked: false,
+      building: {
+        cost: () => 10000,
+        classRef: Bishop,
+      },
+      tooltip: "10000⚡︎ - Rolls dice in a diagonal pattern.",
     },
-    tooltip: "10000⚡︎ - Rolls dice in a diagonal pattern.",
-  },
-  {
-    code: "REMOVE",
-    image: Resources.DiceSkull,
-    name: "Remove",
-    unlocked: true,
-    building: {
-      cost: () => 0,
-      classRef: null,
+    {
+      code: "REMOVE",
+      image: Resources.DiceSkull,
+      name: "Remove",
+      unlocked: true,
+      building: {
+        cost: () => 0,
+        classRef: null,
+      },
+      type: PlayerActionTypes.BUILDABLE,
+      tooltip: "Removes a dice from the board.",
     },
-    type: PlayerActionTypes.BUILDABLE,
-    tooltip: "Removes a dice from the board.",
-  },
-  {
-    code: "UPGRADES",
-    image: Resources.FlaskFull,
-    unlocked: true,
-    name: "Show Research",
-    type: PlayerActionTypes.MENU,
-    tooltip: "Show the research panel.",
-  },
-];
+    {
+      code: "UPGRADES",
+      image: Resources.FlaskFull,
+      unlocked: true,
+      name: "Show Research",
+      type: PlayerActionTypes.MENU,
+      tooltip: "Show the research panel.",
+    },
+  ] as any;
+  return playerActions;
+
+}

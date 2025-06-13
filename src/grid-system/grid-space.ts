@@ -1,5 +1,5 @@
-import * as ex from "excalibur";
 import { Serializable } from "@src/systems/save-system";
+import * as ex from "excalibur";
 import { GridSystem } from "./grid-system";
 
 export class GridSpace extends ex.Actor implements Serializable {
@@ -54,7 +54,7 @@ export class GridSpace extends ex.Actor implements Serializable {
     return this.grid.getNeighbors(this);
   }
 
-  handleClick: () => void = () => {};
+  handleClick: () => void = () => { };
 
   getBounds(): ex.BoundingBox {
     return new ex.BoundingBox(

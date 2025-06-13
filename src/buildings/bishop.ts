@@ -18,8 +18,6 @@ export class Bishop extends Building {
     this.spriteImage = Resources.ChessBishop;
   }
 
-  onBuild(): void { }
-
   onInitialize(engine: ex.Engine): void {
     super.onInitialize(engine);
     this.bounds = this.level.gridSystem?.size?.clone() ?? ex.vec(0, 0);

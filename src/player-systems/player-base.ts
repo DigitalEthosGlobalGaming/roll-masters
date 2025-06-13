@@ -1,4 +1,3 @@
-import { Environment } from "@src/env";
 import { Building } from "@src/building";
 import { Dice } from "@src/buildings/dice";
 import {
@@ -7,15 +6,16 @@ import {
 } from "@src/components/player-upgrades-component";
 import { ScoreComponent } from "@src/components/score-component";
 import { Upgrade } from "@src/components/upgrade-component";
+import { Environment } from "@src/env";
 import { Ghost } from "@src/ghost";
 import { GridSpace } from "@src/grid-system/grid-space";
 import { ExtendedPointerEvent } from "@src/input/extended-pointer-event";
 import { ButtonStates, InputHandler, InputManager } from "@src/input/input-manager";
-import { GameScene } from "@src/scenes/game.scene";
+import { DiceGameScene } from "@src/scenes/dice-game.scene";
 import { PlayerUi } from "@src/ui/scores/player-ui";
 import * as ex from "excalibur";
 import {
-  playerActions,
+  getPlayerActions,
   PlayerActions,
   PlayerActionTypes,
 } from "./player-actions";
@@ -84,7 +84,7 @@ export class PlayerBase extends ex.Actor implements InputHandler {
     this._currentAction = value;
     this.clearTooltips();
     this.playerUi.dirty = true;
-    let relatedAction = playerActions.find((a) => a.code == value);
+    let relatedAction = getPlayerActions().find((a) => a.code == value);
     if (relatedAction != null) {
       this.showTooltip({
         code: relatedAction.code,
@@ -138,12 +138,12 @@ export class PlayerBase extends ex.Actor implements InputHandler {
     return this.scene?.camera;
   }
 
-  getScene(): GameScene {
+  getScene(): DiceGameScene {
     if (this.scene == null) {
       throw new Error("Scene is null");
     }
-    if (!(this.scene instanceof GameScene)) {
-      throw new Error("Scene is not a GameScene");
+    if (!(this.scene instanceof DiceGameScene)) {
+      throw new Error("Scene is not a DiceGameScene");
     }
     return this.scene;
   }
@@ -244,7 +244,7 @@ export class PlayerBase extends ex.Actor implements InputHandler {
 
   onSpaceClicked(space: GridSpace) {
     if (this.cameraMovementData == null) {
-      let currentAction = playerActions.find(
+      let currentAction = getPlayerActions().find(
         (a) => a.code == this.currentAction
       );
       if (currentAction?.type == PlayerActionTypes.BUILDABLE) {
@@ -313,7 +313,7 @@ export class PlayerBase extends ex.Actor implements InputHandler {
     }
     let existingBuilding = space.children.find((c) => c instanceof Building);
     if (existingBuilding == null) {
-      const action = playerActions.find((a) => a.code == this.currentAction);
+      const action = getPlayerActions().find((a) => a.code == this.currentAction);
       let cost = 0;
       if (action?.type == PlayerActionTypes.BUILDABLE) {
         cost = action.building.cost();
@@ -324,14 +324,14 @@ export class PlayerBase extends ex.Actor implements InputHandler {
             newDice.faces = 6;
             newDice.rollSpeed = 1;
             space.addChild(newDice);
-            newDice.onBuild();
+            newDice.build();
           } else {
             if (action.building.classRef == null) {
               this.removeBuildable(space.globalPos);
             } else {
               const building = new action.building.classRef();
               space.addChild(building);
-              building.onBuild();
+              building.build();
             }
           }
         }
@@ -351,7 +351,7 @@ export class PlayerBase extends ex.Actor implements InputHandler {
       return;
     }
 
-    let relatedAction = playerActions.find((a) => a.code == this.currentAction);
+    let relatedAction = getPlayerActions().find((a) => a.code == this.currentAction);
     if (relatedAction != null) {
       ui.tooltip = {
         code: relatedAction.code,
@@ -465,7 +465,7 @@ export class PlayerBase extends ex.Actor implements InputHandler {
   }
 
   unlockAction(action: PlayerActions | string) {
-    let playerAction = playerActions.find((a) => a.code == action);
+    let playerAction = getPlayerActions().find((a) => a.code == action);
     if (playerAction == null) {
       return;
     }

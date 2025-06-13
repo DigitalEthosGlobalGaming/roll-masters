@@ -1,6 +1,6 @@
 import {
-  PlayerActions,
-  playerActions,
+  getPlayerActions,
+  PlayerActions
 } from "@src/player-systems/player-actions";
 import { PlayerActionsUi } from "@src/player-systems/player-actions-ui";
 import { PlayerTooltip, Tooltip } from "@src/player-systems/player-tooltip";
@@ -23,7 +23,7 @@ export class PlayerUi extends Panel {
   }
 
   get currentAction(): PlayerActions | null {
-    let item = playerActions.find((a) => a.code == this.player?.currentAction);
+    let item = getPlayerActions().find((a) => a.code == this.player?.currentAction);
     return item?.code ?? null;
   }
 
