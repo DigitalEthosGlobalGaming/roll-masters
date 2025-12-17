@@ -4,7 +4,6 @@ import { Player } from "./player-systems/player";
 import { DiceGameScene } from "./scenes/dice-game.scene";
 import { Serializable } from "./systems/save-system";
 
-console.log("T");
 export class Building extends ex.Actor implements Serializable {
   static serializeName: string = "Building";
   friendlyName: string = "Building";
