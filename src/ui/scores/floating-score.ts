@@ -27,6 +27,8 @@ export class FloatingScore extends ex.Actor {
     sprite.width = 10;
     sprite.height = 10;
 
+    // Tint the sprite to gold color
+    sprite.tint = ex.Color.fromRGB(255, 215, 0);
     this.graphics.use(sprite);
 
     return new Promise<number>((resolve) => {

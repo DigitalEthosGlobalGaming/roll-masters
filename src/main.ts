@@ -1,6 +1,5 @@
 import * as ex from "excalibur";
 import { GameLoader } from "./game-loader";
-import { GameScene } from "@src/scenes/game.scene";
 import { WelcomeScene } from "@src/scenes/welcome.scene";
 import { CreditScene } from "@src/scenes/credits.scene";
 import { HowToPlayScene } from "@src/scenes/how-to-play.scene";
@@ -9,7 +8,7 @@ import { TestUserInterfaceScene } from "@src/scenes/test/user-interface/user-int
 import { SoundManager } from "@src/sound-manager";
 import { PrestigeScene } from "./scenes/prestige.scene";
 import { SettingsScene } from "./scenes/settings.scene";
-import { OtherScene } from "./scenes/other.scene";
+import { GameScene } from "./scenes/game.scene";
 
 async function waitForFontLoad(font: string, timeout = 2000, interval = 100) {
   return new Promise((resolve, reject) => {
@@ -44,8 +43,7 @@ waitForFontLoad("24px DS-DIGI").then(() => {
       UpdatesScene,
       TestUserInterfaceScene,
       PrestigeScene,
-      SettingsScene,
-      OtherScene
+      SettingsScene
     },
   });
 

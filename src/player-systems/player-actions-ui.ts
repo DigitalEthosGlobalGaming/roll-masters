@@ -46,7 +46,8 @@ export class PlayerActionButton extends Button {
 
   updateColor() {
     const defaultColor = ex.Color.White;
-    const focusedColor = new ex.Color(0, 180, 150, 1);
+    
+    const focusedColor = ex.Color.Brown
     let colors = {
       hovered: defaultColor.clone().darken(0.5),
       focused: focusedColor,

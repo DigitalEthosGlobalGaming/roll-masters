@@ -11,7 +11,7 @@ import { Ghost } from "@src/ghost";
 import { GridSpace } from "@src/grid-system/grid-space";
 import { ExtendedPointerEvent } from "@src/input/extended-pointer-event";
 import { ButtonStates, InputHandler, InputManager } from "@src/input/input-manager";
-import { DiceGameScene } from "@src/scenes/dice-game.scene";
+import { GameScene } from "@src/scenes/game.scene";
 import { PlayerUi } from "@src/ui/scores/player-ui";
 import * as ex from "excalibur";
 import {
@@ -138,11 +138,11 @@ export class PlayerBase extends ex.Actor implements InputHandler {
     return this.scene?.camera;
   }
 
-  getScene(): DiceGameScene {
+  getScene(): GameScene {
     if (this.scene == null) {
       throw new Error("Scene is null");
     }
-    if (!(this.scene instanceof DiceGameScene)) {
+    if (!(this.scene instanceof GameScene)) {
       throw new Error("Scene is not a DiceGameScene");
     }
     return this.scene;

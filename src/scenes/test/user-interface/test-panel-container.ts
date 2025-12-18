@@ -6,7 +6,7 @@ export class TestPanelContainer extends Panel {
     isSetup: boolean = false;
     onAdd(engine: ex.Engine): void {
         super.onAdd(engine);
-        this.background = PanelBackgrounds.ButtonSquareFlat;
+        this.background = PanelBackgrounds.Panel;
     }
 
     calculateSize(): void {

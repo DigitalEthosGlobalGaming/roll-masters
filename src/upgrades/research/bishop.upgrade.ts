@@ -7,7 +7,7 @@ export class BishopUpgrade extends Upgrade {
   get description(): string {
     if (this.level == 0) {
       return [
-        `{nextCost}⚡︎ - Allows building of bishop`,
+        `{nextCost}\u23E2 - Allows building of bishop`,
         ` - Rolls dice in diagonals from the bishop.`,
       ].join("\n");
     }

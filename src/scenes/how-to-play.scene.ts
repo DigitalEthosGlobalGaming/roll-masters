@@ -9,12 +9,12 @@ const elements: any[] = [
   "HELP",
   " ",
   "-----Objective-----",
-  "Roll dice and try to get as much energy as possible",
+  "Roll dice and try to get as much gold as possible",
   "",
   "-----How to play-----",
   "Click and drag your mouse to move the camera",
   "Choose what to place using the buttons on the bottom of the screen",
-  "Place a dice, then click on it to roll it, this generates energy",
+  "Place a dice, then click on it to roll it, this generates gold",
 ];
 
 class HowToPlayUi extends Panel {

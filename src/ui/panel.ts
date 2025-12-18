@@ -10,7 +10,8 @@ import { getNineslice } from "@src/resources";
 import * as ex from "excalibur";
 
 export enum PanelBackgrounds {
-  "ButtonSquareFlat" = "ButtonSquareFlat",
+  "Panel" = "Panel",
+  "Button" = "Button",
 }
 
 type DirtyPanels = {

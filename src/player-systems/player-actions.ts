@@ -66,7 +66,7 @@ export function getPlayerActions() {
       },
       unlocked: true,
       tooltip:
-        "10⚡︎ - Will roll to generate income.\n         Click to roll once placed.",
+        "10\u23E2 - Will roll to generate income.\n         Click to roll once placed.",
     },
     {
       code: "NEWROLLER",
@@ -78,7 +78,7 @@ export function getPlayerActions() {
         cost: () => 100,
         classRef: Roller,
       },
-      tooltip: "100⚡︎ - Every 10 seconds will roll all touching dice.",
+      tooltip: "100\u23E2 - Every 10 seconds will roll all touching dice.",
     },
     {
       code: "NEWKNIGHT",
@@ -89,7 +89,7 @@ export function getPlayerActions() {
         cost: () => 1000,
         classRef: WanderingKnight,
       },
-      tooltip: "1000⚡︎ - Moves around the board, strenghtening dice.",
+      tooltip: "1000\u23E2 - Moves around the board, strenghtening dice.",
     },
     {
       code: "ROOK",
@@ -113,7 +113,7 @@ export function getPlayerActions() {
         cost: () => 10000,
         classRef: Bishop,
       },
-      tooltip: "10000⚡︎ - Rolls dice in a diagonal pattern.",
+      tooltip: "10000\u23E2 - Rolls dice in a diagonal pattern.",
     },
     {
       code: "REMOVE",

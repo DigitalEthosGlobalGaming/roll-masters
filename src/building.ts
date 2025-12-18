@@ -1,8 +1,8 @@
 import * as ex from "excalibur";
 import { GridSpace } from "./grid-system/grid-space";
-import { Player } from "./player-systems/player";
-import { DiceGameScene } from "./scenes/dice-game.scene";
-import { Serializable } from "./systems/save-system";
+import type { Player } from "./player-systems/player";
+import type { GameScene } from "./scenes/game.scene";
+import type { Serializable } from "./systems/save-system";
 
 export class Building extends ex.Actor implements Serializable {
   static serializeName: string = "Building";
@@ -32,10 +32,7 @@ export class Building extends ex.Actor implements Serializable {
     return this.gridSpace.gridPos ?? ex.vec(0, 0);
   }
   get level() {
-    if (this.scene instanceof DiceGameScene) {
-      return this.scene;
-    }
-    throw new Error("Scene is not a game scene");
+    return this.scene as GameScene;
   }
   private _color: ex.Color = ex.Color.White;
 
@@ -66,10 +63,21 @@ export class Building extends ex.Actor implements Serializable {
       return;
     }
     const sprite = ex.Sprite.from(value);
-    sprite.destSize = {
-      width: 24,
-      height: 24,
-    };
+    
+    const aspectRatio = value.width / value.height;
+    const maxWidth = 24;
+    const maxHeight = 24;
+    
+    let width = maxWidth;
+    let height = maxHeight;
+    
+    if (aspectRatio > 1) {
+      height = maxWidth / aspectRatio;
+    } else {
+      width = maxHeight * aspectRatio;
+    }
+    
+    sprite.destSize = { width, height };
     this.graphics.add("empty", sprite);
     this.graphics.use("empty");
   }

@@ -94,7 +94,7 @@ export class ScoreComponent extends BaseComponent {
     this.lastTimerRan = now;
     if (this.scoreLabel == null) {
       this.scoreLabel = new ex.Label({
-        text: `Energy: ${this._score}`,
+        text: `Gold: ${this._score}`,
         pos: new ex.Vector(10, 10),
         font: new ex.Font({
           family: "ds-digi",
@@ -109,9 +109,9 @@ export class ScoreComponent extends BaseComponent {
     }
     this._previousScore = this._score;
     const prestigePoints = player.prestigePoints;
-    let text = `Energy: ${Math.floor(this._score)}⚡︎`;
+    let text = `Gold: ${Math.floor(this._score)}\u23E2`;
     // if (this._scorePerMinute > 0) {
-    //   text += `\n${this._scorePerMinute}⚡︎/min`;
+    //   text += `\n${this._scorePerMinute}\u23E2/min`;
     // }
     if (prestigePoints > 0) {
       text += `\n${prestigePoints}⏣`;

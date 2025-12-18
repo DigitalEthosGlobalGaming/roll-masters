@@ -315,7 +315,7 @@ export class SaveSystem extends System {
     this.processAddQueue();
   }
 
-  load(scene: Scene, data: SerializeState | object | string) {
+  load(scene: Scene, data?: SerializeState | object | string) {
     this.currentScene = scene;
     this.currentlyProcessing = true;
     try {

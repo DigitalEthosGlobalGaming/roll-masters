@@ -125,7 +125,7 @@ export class Slider extends Panel {
     const size = this.size;
     const sliderGraphic = {
       graphic: getNineslice({
-        name: "ButtonSquareFlat",
+        name: "Button",
         width: size.x,
         height: size.y,
       }),

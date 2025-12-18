@@ -7,7 +7,7 @@ export class WanderingKnightUpgrade extends Upgrade {
   get description(): string {
     if (this.level == 0) {
       return [
-        `{nextCost}⚡︎ - Allows building of wandering knight`,
+        `{nextCost}\u23E2 - Allows building of wandering knight`,
         ` - Moves around the board giving dice a multiplier.`,
       ].join("\n");
     }

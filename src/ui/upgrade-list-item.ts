@@ -27,7 +27,7 @@ export class UpgradeListItem extends Panel {
             buyButton.size.x / 2 + buyButton.padding + 5,
             buyButton.pos.y
         );
-        buyButton.hoverColor = ex.Color.Green;
+        buyButton.hoverColor = ex.Color.Brown;
         buyButton.text = "Buy";
         buyButton.fontSize = 20;
         const updateTooltip = () => {

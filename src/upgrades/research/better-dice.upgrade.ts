@@ -6,12 +6,12 @@ export class BetterDiceUpgrade extends Upgrade {
   override code = "BETTER_DICE";
   get description(): string {
     if (this.level == 0) {
-      return `{nextCost}⚡︎ - Dice generates {nextValue}⚡︎ extra when rolled.`;
+      return `{nextCost}\u23E2 - Dice generates {nextValue}\u23E2 extra when rolled.`;
     }
 
     const parts = [
-      `Dice generate {value}⚡︎ extra when rolled.`,
-      `{nextCost}⚡︎ - Increase to {nextValue}⚡︎`,
+      `Dice generate {value}\u23E2 extra when rolled.`,
+      `{nextCost}\u23E2 - Increase to {nextValue}\u23E2`,
     ];
 
     return parts.join("\n");

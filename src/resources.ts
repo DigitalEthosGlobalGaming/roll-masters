@@ -18,12 +18,12 @@ export const Resources = {
   HandCube: new ex.ImageSource("./images/board-game-icons/hand_cube.png"),
   DiceOut: new ex.ImageSource("./images/board-game-icons/dice_out.png"),
   Pouch: new ex.ImageSource("./images/board-game-icons/pouch.png"),
-  ChessQueen: new ex.ImageSource("./images/board-game-icons/chess_queen.png"),
-  ChessKing: new ex.ImageSource("./images/board-game-icons/chess_king.png"),
-  ChessRook: new ex.ImageSource("./images/board-game-icons/chess_rook.png"),
-  ChessKnight: new ex.ImageSource("./images/board-game-icons/chess_knight.png"),
-  ChessBishop: new ex.ImageSource("./images/board-game-icons/chess_bishop.png"),
-  ChessPawn: new ex.ImageSource("./images/board-game-icons/chess_pawn.png"),
+  ChessQueen: new ex.ImageSource("./images/medieval/chess_queen.png"),
+  ChessKing: new ex.ImageSource("./images/medieval/chess_king.png"),
+  ChessRook: new ex.ImageSource("./images/medieval/chess_rook.png"),
+  ChessKnight: new ex.ImageSource("./images/medieval/chess_knight.png"),
+  ChessBishop: new ex.ImageSource("./images/medieval/chess_bishop.png"),
+  ChessPawn: new ex.ImageSource("./images/medieval/chess_pawn.png"),
   SuitDiamonds: new ex.ImageSource(
     "./images/board-game-icons/suit_diamonds.png"
   ),
@@ -41,8 +41,8 @@ export const Resources = {
   ),
 
   // UI Images
-  UiButtonSquareFlat: new ex.ImageSource("./images/ui/button_square_flat.png"),
-  UiFrame: new ex.ImageSource("./images/ui/button_square_flat.png"),
+  UiPanel: new ex.ImageSource("./images/ui/panel.png"),
+  UiButton: new ex.ImageSource("./images/ui/button.png"),
 } as const;
 
 export const SoundPaths = {
@@ -71,15 +71,26 @@ export const Sounds: Record<keyof typeof SoundPaths, ex.Sound> = {
 export type SoundKey = keyof typeof SoundPaths;
 
 const UiNineSlices = {
-  ButtonSquareFlat: {
-    source: Resources.UiButtonSquareFlat,
+  Button: {
+    source: Resources.UiButton,
     sourceConfig: {
-      width: 105,
-      height: 21,
-      topMargin: 8,
-      leftMargin: 8,
-      bottomMargin: 8,
-      rightMargin: 8,
+      width: 1024,
+      height: 1024,
+      topMargin: 0,
+      leftMargin: 0,
+      bottomMargin: 0,
+      rightMargin: 0,
+    },
+  },
+  Panel: {
+    source: Resources.UiPanel,
+    sourceConfig: {
+      width: 1024,
+      height: 1024,
+      topMargin: 0,
+      leftMargin: 0,
+      bottomMargin: 0,
+      rightMargin: 0,
     },
   },
 };

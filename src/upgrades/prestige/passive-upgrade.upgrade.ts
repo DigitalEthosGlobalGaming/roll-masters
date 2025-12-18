@@ -2,13 +2,13 @@ import { GrowthType } from "@src/utility/big-o-calculations";
 import { Upgrade, UpgradeType } from "@src/components/upgrade-component";
 
 export class BetterPassiveEnergyUpgrade extends Upgrade {
-  override name = "Passive Energy Boost";
+  override name = "Passive Gold Boost";
   override code = "PASSIVE_BOOST";
   type: UpgradeType = "PRESTIGE";
 
   get description(): string {
     const parts = [
-      `Passive energy increased by ${this.value}%`,
+      `Passive gold increased by ${this.value}%`,
       `{nextCost}⏣ - Increases the amount of passive income by ${this.nextValue}%`,
     ];
 

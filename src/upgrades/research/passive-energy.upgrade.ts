@@ -2,11 +2,11 @@ import { GrowthType } from "@src/utility/big-o-calculations";
 import { Upgrade } from "@src/components/upgrade-component";
 
 const parts = [
-  `Generates {value}⚡︎ every second.`,
-  `{nextCost}⚡︎ - Increase to {nextValue}⚡︎`,
+  `Generates {value}\u23E2 every second.`,
+  `{nextCost}\u23E2 - Increase to {nextValue}\u23E2`,
 ];
 export class PassiveEnergyComponent extends Upgrade {
-  override name = "Passive Energy";
+  override name = "Passive Gold";
   override code = "PASSIVE_ENERGY";
   constructor() {
     super();

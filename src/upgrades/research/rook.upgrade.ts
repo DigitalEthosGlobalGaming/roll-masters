@@ -7,7 +7,7 @@ export class RookUpgrade extends Upgrade {
   get description(): string {
     if (this.level == 0) {
       return [
-        `{nextCost}⚡︎ - Allows building of a Rook`,
+        `{nextCost}\u23E2 - Allows building of a Rook`,
         ` - Moves through dice to the next free space.`,
         " - Adding multipliers to all dice passed.",
       ].join("\n");
@@ -15,7 +15,7 @@ export class RookUpgrade extends Upgrade {
 
     const parts = [
       ` adds {value}to a dice's multiplier when moving through.`,
-      `{nextCost} - Increase to {nextValue}⚡︎`,
+      `{nextCost} - Increase to {nextValue}\u23E2`,
     ];
 
     return parts.join("\n");

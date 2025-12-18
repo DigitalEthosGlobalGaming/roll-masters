@@ -4,12 +4,12 @@ import { Panel } from "@src/ui/panel";
 
 
 export enum PanelBackgrounds {
-  "ButtonSquareFlat" = "ButtonSquareFlat",
+  "Panel" = "Panel",
 }
 
 export class Modal extends Panel implements InputHandler {
   onInitialize(): void {
-    this.background = PanelBackgrounds.ButtonSquareFlat;
+    this.background = PanelBackgrounds.Panel;
     this.size = ex.vec(400, 400);
   }
   onRender(): void {

@@ -51,7 +51,7 @@ export class Button extends Panel {
       }
     }
   }
-  hoverColor?: ex.Color = ex.Color.Gray;
+  hoverColor?: ex.Color = ex.Color.Brown;
   originalColor?: ex.Color;
 
   set icon(value: ButtonIcon) {
@@ -156,7 +156,7 @@ export class Button extends Panel {
 
   constructor(parent: Panel) {
     super(parent);
-    this.background = PanelBackgrounds.ButtonSquareFlat;
+    this.background = PanelBackgrounds.Button;
     this.padding = 20;
   }
 

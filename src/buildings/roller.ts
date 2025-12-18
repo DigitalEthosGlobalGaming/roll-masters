@@ -2,8 +2,6 @@ import { Building } from "@src/building";
 import { Resources } from "@src/resources";
 import * as ex from "excalibur";
 import { Engine, Timer } from "excalibur";
-import { Dice } from "./dice";
-
 import { random } from "@src/utility/random";
 
 
@@ -92,8 +90,9 @@ export class Roller extends Building {
       let neighbour = neighbours[index as keyof typeof neighbours];
       let children = neighbour?.children ?? [];
       for (let child of children) {
-        if (child instanceof Dice) {
-          child.rollDice();
+        if (typeof (child as any).rollDice === "function") {
+          (child as any).rollDice();
+          continue;
         }
       }
     }

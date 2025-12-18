@@ -13,7 +13,7 @@ export class UpgradeUi extends Panel {
       return;
     }
     const title = this.addPanel("title", Label);
-    title.pos = ex.vec(0, title.halfHeight + 10);
+    title.pos = ex.vec(0, title.halfHeight + 40);
     title.text = "Research";
     title.fontSize = 40;
 
@@ -40,7 +40,7 @@ export class UpgradeUi extends Panel {
         }
       }
       list.pos = ex.vec(
-        -this.getParentBounds().width / 2,
+        -this.getParentBounds().width / 2 + 20,
         title.pos.y + title.height + list.halfHeight
       );
 
@@ -52,7 +52,7 @@ export class UpgradeUi extends Panel {
           prestige.fontSize = 20;
           prestige.pos = ex.vec(0, parent.height - this.halfHeight - 30);
           prestige.tooltip =
-            "Prestige to gain ⏣, earn 1 ⏣ for every 1 million energy earned.";
+            "Prestige to gain ⏣, earn 1 ⏣ for every 1 million gold earned.";
           prestige.onClick = () => {
             if (parent instanceof UpgradesModal) {
               parent.currentTab = "prestige-ui";

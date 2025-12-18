@@ -18,7 +18,7 @@ export class PrestigeUi extends UpgradeUi {
     }
     let totalPrestiges = this.player.totalPrestiges ?? 0;
     const title = this.addPanel("title", Label);
-    title.top = 10;
+    title.top = 40;
     if (totalPrestiges == 0) {
       title.text = "Prestige";
     } else {
@@ -36,8 +36,8 @@ export class PrestigeUi extends UpgradeUi {
     }
     prestige.text = `PRESTIGE +${prestigePoints}⏣`;
     prestige.fontSize = 20;
-    prestige.top = title.height + 20;
-    prestige.tooltip = `Prestige to gain ${prestigePoints}⏣, 1 ⏣ for every 1 million energy earned.`;
+    prestige.top = title.height + 50;
+    prestige.tooltip = `Prestige to gain ${prestigePoints}⏣, 1 ⏣ for every 1 million gold earned.`;
     prestige.onPointerUp = () => {
       if (prestige.disabled) {
         return;
