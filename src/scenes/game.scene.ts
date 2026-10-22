@@ -9,13 +9,7 @@ import * as ex from "excalibur";
 import { prestigeReward } from "@src/ui/game-presentation";
 import { getPlayerActions } from "@src/player-systems/player-actions";
 
-const boardColors = {
-  shadow: ex.Color.fromHex("#0b0d0e"),
-  frame: ex.Color.fromHex("#362e26"),
-  rim: ex.Color.fromHex("#86704b"),
-  inset: ex.Color.fromHex("#111c19"),
-  alternate: ex.Color.fromHex("#253c34"),
-};
+import { boardPadding, createBoardGraphic } from "@src/graphics/board";
 
 export class GameScene extends Level implements Serializable {
   static serializeName = "GameScene";
@@ -32,6 +26,8 @@ export class GameScene extends Level implements Serializable {
   random = new ex.Random();
   gridSystem: DiceGameGridSystem | null = null;
   gridColor = ex.Color.fromHex("#20352e");
+  private boardGraphic?: ex.Canvas;
+  private boardGraphicKey = "";
   saveSystem!: DiceSaveSystem;
   notificationSystem!: NotificationSystem;
   autosaveTimer: ex.Timer | null = null;
@@ -39,6 +35,9 @@ export class GameScene extends Level implements Serializable {
 
   override onInitialize(engine: ex.Engine): void {
     super.onInitialize(engine);
+    // Placement/input use grid bounds, and gameplay has no physical collisions.
+    // Disabling collision processing leaves the motion/action systems running.
+    this.physics.config = { ...this.physics.config, enabled: false };
     if (this.notificationSystem == null) {
       this.notificationSystem = new NotificationSystem();
       this.world.add(this.notificationSystem);
@@ -103,23 +102,21 @@ export class GameScene extends Level implements Serializable {
   }
 
   postLoad(): void {
-    this.player = this.entities.find((e) => {
-      return e instanceof Player;
+    this.player = this.entities.find((e): e is Player => {
+      return e instanceof Player && !e.isKilled();
     });
-    let gridSystem = this.entities.find((e) => {
-      return e instanceof DiceGameGridSystem;
+    const gridSystem = this.entities.find((e): e is DiceGameGridSystem => {
+      return e instanceof DiceGameGridSystem && !e.isKilled();
     });
-    if (gridSystem != null) {
-      this.gridSystem = gridSystem;
-    }
+    this.gridSystem = gridSystem ?? null;
     let timer = new ex.Timer({
       fcn: () => {
         if (this.gridSystem == null) {
           this.gridSystem = new DiceGameGridSystem();
           this.add(this.gridSystem);
         }
-        this.gridSystem.size = new ex.Vector(32, 32);
         this.gridSystem.spaceSize = new ex.Vector(32, 32);
+        this.resizeGrid();
 
         if (this.player == null) {
           this.player = new Player();
@@ -128,8 +125,6 @@ export class GameScene extends Level implements Serializable {
           const gridSize = this.gridSystem.getBounds().center;
           this.player.wishPosition = gridSize.clone();
         }
-        this.resizeGrid();
-
         this.inputSystem.paused = false;
         if (this.openPrestigeOnLoad) {
           this.openPrestigeOnLoad = false;
@@ -169,50 +164,18 @@ export class GameScene extends Level implements Serializable {
     if (gridBounds == null) {
       return;
     }
-    const position = gridBounds?.topLeft;
-    const width = gridBounds?.width;
-    const height = gridBounds?.height;
-
-    const screenPosition = this.engine.worldToScreenCoordinates(position);
-    const zoom = this.camera.zoom;
-    const boardWidth = width * zoom;
-    const boardHeight = height * zoom;
-
-    // Draw the tabletop in the same screen space as the board so its frame
-    // follows camera movement and zoom without changing placement bounds.
-    const surround = (padding: number, color: ex.Color, offset = 0) => {
-      ctx.drawRectangle(
-        screenPosition.add(ex.vec((offset - padding) * zoom, (offset - padding) * zoom)),
-        boardWidth + padding * 2 * zoom,
-        boardHeight + padding * 2 * zoom,
-        color
-      );
-    };
-    surround(13, boardColors.shadow, 5);
-    surround(11, boardColors.rim);
-    surround(10, boardColors.frame);
-    surround(3, boardColors.rim);
-    surround(2, boardColors.inset);
-
-    ctx.drawRectangle(
-      screenPosition,
-      boardWidth,
-      boardHeight,
-      this.gridColor
-    );
     const grid = this.gridSystem!;
-    const cellWidth = grid.spaceSize.x * zoom;
-    const cellHeight = grid.spaceSize.y * zoom;
-    for (let row = 0; row < grid.size.y; row++) {
-      for (let col = row % 2; col < grid.size.x; col += 2) {
-        ctx.drawRectangle(
-          screenPosition.add(ex.vec(col * cellWidth, row * cellHeight)),
-          cellWidth,
-          cellHeight,
-          boardColors.alternate
-        );
-      }
+    const key = `${grid.size.x}:${grid.size.y}:${grid.spaceSize.x}:${grid.spaceSize.y}:${this.gridColor.toString()}`;
+    if (key !== this.boardGraphicKey) {
+      this.boardGraphic = createBoardGraphic(grid.size.x, grid.size.y, grid.spaceSize.x, grid.spaceSize.y, this.gridColor);
+      this.boardGraphicKey = key;
     }
+    const screenPosition = this.engine.worldToScreenCoordinates(gridBounds.topLeft);
+    ctx.save();
+    ctx.translate(screenPosition.x, screenPosition.y);
+    ctx.scale(this.camera.zoom, this.camera.zoom);
+    this.boardGraphic!.draw(ctx, -boardPadding, -boardPadding);
+    ctx.restore();
   }
 
   prestige() {

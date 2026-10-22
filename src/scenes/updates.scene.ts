@@ -1,21 +1,12 @@
 import { gameUpdates } from "@src/game-updates";
 import { Level } from "@src/level";
-import { Button } from "@src/ui/elements/button";
-import { Label } from "@src/ui/elements/label";
-import { ScreenPanel } from "@src/ui/screen-panel";
+import { InformationScreen } from "@src/ui/information-screen";
 import * as ex from "excalibur";
-class UpdatesUi extends ScreenPanel {
-  override onSetup(): void {
-    let index = 0;
-    for (const update of gameUpdates) {
-      const date = this.content.addPanel(`date-${index++}`, Label); date.fontSize = 28; date.text = update.date;
-      for (const [category, lines] of Object.entries(update.updates)) {
-        const heading = this.content.addPanel(`heading-${index++}`, Label); heading.text = category;
-        for (const line of lines) { const label = this.content.addPanel(`line-${index++}`, Label); label.text = line; }
-      }
-    }
-    const back = this.addPanel("back", Button); back.text = "Back";
-    back.onClick = () => { this.scene?.engine.goToScene("WelcomeScene"); };
+
+export class UpdatesUi extends InformationScreen {
+  constructor() {
+    super("Release notes", "What is new in Roll Masters, newest first.", gameUpdates.flatMap(update =>
+      Object.entries(update.updates).flatMap(([category, lines]) => lines.map(body => ({ title: `${update.date} · ${category}`, body })))));
   }
 }
 export class UpdatesScene extends Level {

@@ -3,6 +3,9 @@ import { Panel } from "./panel";
 import { Label } from "./elements/label";
 import { Environment } from "@src/env";
 import { SoundManager } from "@src/sound-manager";
+import { Slider } from "./elements/slider";
+import { volumePercent } from "@src/settings/audio-settings";
+import type { VolumeSetting } from "@src/settings/audio-settings";
 
 const palette = {
   card: ex.Color.fromHex("#1e2522"), edge: ex.Color.fromHex("#65583e"),
@@ -109,7 +112,6 @@ export class SettingsRow extends Panel {
       const choice = this.addPanel(`choice-${index}`, SettingsChoice, title);
       choice.onChoose = () => {
         Environment.set(this.option.key, index);
-        if (this.option.key === "sound") SoundManager.instance?.applySettings();
         let root = this.parentPanel;
         if (!root) return;
         while (root.parentPanel) root = root.parentPanel;
@@ -182,6 +184,79 @@ export class SettingsRow extends Panel {
   }
 }
 
+class VolumeSlider extends Slider {
+  override onRefresh(): void {
+    super.onRefresh();
+    this.getPanel<Label>("thumb")!.text = `${this.value}%`;
+  }
+}
+
+export class SettingsVolumeRow extends Panel {
+  private title!: Label;
+  private description!: Label;
+  private status!: Label;
+  private slider!: VolumeSlider;
+  private availableWidth = 560;
+  private surface = new ex.Rectangle({ width: 1, height: 1, color: palette.card });
+  private surfaceMember = this.addGraphic(this.surface);
+  constructor(parent: Panel, readonly setting: VolumeSetting, readonly caption: string) { super(parent); }
+  setLayoutWidth(width: number): void {
+    width = Math.max(1, width);
+    if (width !== this.availableWidth) { this.availableWidth = width; this.invalidateLayout(); }
+  }
+  override onSetup(): void {
+    this.title = this.addPanel("title", Label); this.title.text = this.caption; this.title.fontSize = 21;
+    this.title.color = palette.brass;
+    this.description = this.addPanel("description", Label); this.description.fontSize = 15;
+    this.description.text = this.setting === "music-volume" ? "Background music level. Zero silences music." : "Dice, building and menu sounds. Zero silences effects.";
+    this.status = this.addPanel("status", Label); this.status.fontSize = 14;
+    for (const label of [this.title, this.description, this.status]) { label.align = "left"; label.z = 1; }
+    this.description.color = this.status.color = palette.muted;
+    this.slider = this.addPanel("slider", VolumeSlider);
+    this.slider.accessibleName = this.caption;
+    this.slider.value = volumePercent(this.setting);
+    this.slider.onValueChanged = (_old, value) => Environment.set(this.setting, value);
+    this.subscriptions.push(Environment.onChange(() => this.invalidate()));
+  }
+  override onRefresh(): void {
+    this.slider.value = volumePercent(this.setting);
+    const mode = Environment.get("sound", 0);
+    this.status.text = mode === 2 || this.setting === "music-volume" && mode === 1 ? "Muted by the Sound setting." : "";
+    this.status.collapsed = !this.status.text;
+  }
+  override onLayout(): void {
+    const width = this.availableWidth, padding = 14;
+    const compact = this.screenHeight > 0 && this.screenHeight < 450;
+    const wide = width >= 600 || compact && width >= 460;
+    this.title.text = compact && this.setting === "effects-volume" ? "Effects volume" : this.caption;
+    this.description.text = compact
+      ? this.setting === "music-volume" ? "Background music." : "Dice and menu sounds."
+      : this.setting === "music-volume" ? "Background music level. Zero silences music." : "Dice, building and menu sounds. Zero silences effects.";
+    if (!this.status.collapsed) this.status.text = compact ? "Muted in Sound." : "Muted by the Sound setting.";
+    const textWidth = wide ? width * 0.5 - padding * 2 : width - padding * 2;
+    for (const label of [this.title, this.description, this.status]) label.maxWidth = Math.max(1, textWidth);
+    const textHeight = this.title.height + 6 + this.description.height + (this.status.collapsed ? 0 : 6 + this.status.height);
+    const height = padding * 2 + (wide ? Math.max(textHeight, 48) : textHeight + 16 + 48);
+    this.size = ex.vec(width, height);
+    this.title.topLeft = ex.vec(-this.halfWidth + padding, -this.halfHeight + padding);
+    this.description.topLeft = ex.vec(this.title.left, this.title.bottom + 6);
+    this.status.topLeft = ex.vec(this.title.left, this.description.bottom + 6);
+    // Reserve space for the thumb at both ends while retaining a 48px control.
+    this.slider.size = ex.vec(Math.max(44, (wide ? width * 0.5 : width - padding * 2) - 64), 48);
+    this.slider.pos = ex.vec(wide ? width * 0.25 : 0, wide ? 0 : this.halfHeight - padding - 24);
+  }
+  override onRender(): void {
+    this.surface.width = this.width; this.surface.height = this.height;
+    this.surfaceMember.offset = ex.vec(-this.halfWidth, -this.halfHeight);
+  }
+}
+
 export function addSettingsContent(parent: Panel): void {
-  for (const option of options) parent.addPanel(option.key, SettingsRow, option);
+  for (const option of options) {
+    parent.addPanel(option.key, SettingsRow, option);
+    if (option.key === "sound") {
+      parent.addPanel("music-volume", SettingsVolumeRow, "music-volume", "Music volume");
+      parent.addPanel("effects-volume", SettingsVolumeRow, "effects-volume", "Sound effects volume");
+    }
+  }
 }

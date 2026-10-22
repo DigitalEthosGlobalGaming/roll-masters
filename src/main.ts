@@ -34,6 +34,10 @@ waitForFontLoad("24px sans-serif").then(() => {
 
   const loader = new GameLoader();
   game.start(loader).then(() => {
+    if (import.meta.env.MODE === "performance") {
+      void import("./performance/game-benchmark").then(({ startBenchmark }) => startBenchmark(game));
+      return;
+    }
     game.goToScene(import.meta.env.DEV && new URLSearchParams(location.search).has("ui-gallery") ? "TestUserInterfaceScene" : "WelcomeScene");
   });
 

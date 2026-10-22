@@ -4,7 +4,7 @@ import * as ex from "excalibur";
 
 export class TestSliderPanel extends TestPanelContainer {
   override onLayout(): void {
-    for (const slider of this.getChildrenPanels()) slider.size = ex.vec(Math.max(150, this.width / 2), 12);
+    for (const slider of this.getChildrenPanels()) slider.size = ex.vec(Math.max(150, this.width / 2), 48);
   }
   setup() {
     const containerSize = this.size ?? ex.vec(0, 0);
@@ -34,7 +34,7 @@ export class TestSliderPanel extends TestPanelContainer {
       let slider = this.addPanel("slider" + i, Slider);
       slider.topCenter = pos.add(ex.vec(0, 30));
       slider.padding = 5;
-      slider.size = ex.vec(Math.max(150, containerSize.x / 2), 12);
+      slider.size = ex.vec(Math.max(150, containerSize.x / 2), 48);
       slider.min = sliderConfigs[i].min;
       slider.max = sliderConfigs[i].max;
       slider.step = sliderConfigs[i].step;

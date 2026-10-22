@@ -1,5 +1,5 @@
 import { Building } from "@src/building";
-import { Environment, Settings } from "@src/env";
+import { motionPreferences } from "@src/settings/motion-preferences";
 import { GridSpace } from "@src/grid-system/grid-space";
 import * as ex from "excalibur";
 import { PieceFeedback } from "./piece-feedback";
@@ -8,7 +8,6 @@ import type { PieceMotionStyle } from "./piece-feedback";
 // Shared presentation for chess buildings; concrete classes retain their save names.
 export class ChessPiece extends Building {
   private feedback: PieceFeedback;
-  private reducedMotion?: MediaQueryList;
 
   constructor(style: PieceMotionStyle) {
     super();
@@ -16,14 +15,16 @@ export class ChessPiece extends Building {
   }
 
   private get quietMotion() {
-    return Environment.get("graphics") === Settings.graphics.basic || !!Environment.get("reduced-motion") || this.reducedMotion?.matches === true;
+    return motionPreferences.quiet;
   }
 
   onInitialize(engine: ex.Engine): void {
     super.onInitialize(engine);
-    this.reducedMotion = globalThis.matchMedia?.("(prefers-reduced-motion: reduce)");
+    let transformed = false;
     this.graphics.onPreDraw = ctx => {
       const pose = this.feedback.pose(this.quietMotion);
+      transformed = pose.rotation !== 0 || pose.scaleX !== 1 || pose.scaleY !== 1;
+      if (!transformed) return;
       ctx.save();
       // Pivot at the foot of the piece so compression stays planted on the board.
       ctx.translate(0, 12);
@@ -31,7 +32,7 @@ export class ChessPiece extends Building {
       ctx.scale(pose.scaleX, pose.scaleY);
       ctx.translate(0, -12);
     };
-    this.graphics.onPostDraw = ctx => ctx.restore();
+    this.graphics.onPostDraw = ctx => { if (transformed) ctx.restore(); };
   }
 
   onPreUpdate(engine: ex.Engine, elapsed: number): void {
@@ -39,7 +40,7 @@ export class ChessPiece extends Building {
     super.onPreUpdate(engine, elapsed);
     const pose = this.feedback.pose(this.quietMotion);
     // Graphics offsets participate in render bounds; long moves can cross the viewport.
-    this.graphics.offset = ex.vec(pose.x, pose.y);
+    if (this.graphics.offset.x !== pose.x || this.graphics.offset.y !== pose.y) this.graphics.offset = ex.vec(pose.x, pose.y);
   }
 
   protected playActivation() {

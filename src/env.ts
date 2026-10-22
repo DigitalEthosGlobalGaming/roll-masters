@@ -11,6 +11,11 @@ export const Settings = {
     }
 }
 class EnvironmentSettings {
+    private listeners = new Set<() => void>();
+    onChange(listener: () => void) {
+        this.listeners.add(listener);
+        return { close: () => this.listeners.delete(listener) };
+    }
     static Global: EnvironmentSettings | null = null;
     static getEnvironmentSetting() {
         if (EnvironmentSettings.Global === null) {
@@ -38,6 +43,7 @@ class EnvironmentSettings {
             }
             let data = JSON.parse(dataString);
             this.data = data;
+            for (const listener of this.listeners) listener();
         }
         catch (e) {
             console.error(e);
@@ -55,6 +61,8 @@ class EnvironmentSettings {
 
     data: Record<string, any> = {
         sound: Settings.sound.all,
+        "music-volume": 100,
+        "effects-volume": 100,
         graphics: Settings.graphics.advanced
     };
     sound: number = 0;
@@ -65,6 +73,7 @@ class EnvironmentSettings {
             return;
         }
         this.data[name] = value;
+        for (const listener of this.listeners) listener();
         this.save();
     }
     get(name: string, def?: any) {

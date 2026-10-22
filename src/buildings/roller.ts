@@ -1,8 +1,7 @@
 import { ChessPiece } from "./chess-piece";
 import { Resources } from "@src/resources";
 import * as ex from "excalibur";
-import { Engine, Timer } from "excalibur";
-import { random } from "@src/utility/random";
+import type { Engine, Timer } from "excalibur";
 
 
 export class Roller extends ChessPiece {
@@ -25,19 +24,23 @@ export class Roller extends ChessPiece {
     try {
       if (Roller.lastGlobalTick < Date.now()) {
         Roller.lastGlobalTick = Date.now() + Roller.rollRate;
-        // let player: Player | null = null;
+        const queued = new Set(Roller.rollerQueue);
         for (let id in Roller.rollers) {
           let roller = Roller.rollers[id];
           if (roller.isKilled()) {
             delete Roller.rollers[id];
             continue;
           }
-          if (roller.needsToRoll) {
+          if (queued.has(roller)) {
             continue;
           }
           Roller.rollerQueue.push(roller);
-          // player = roller.player;
-          Roller.rollerQueue = random.array(Roller.rollerQueue);
+          roller.needsToRoll = true;
+        }
+        // Shuffle once, in linear time, after collecting this tick's work.
+        for (let i = Roller.rollerQueue.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [Roller.rollerQueue[i], Roller.rollerQueue[j]] = [Roller.rollerQueue[j], Roller.rollerQueue[i]];
         }
       }
 
@@ -58,6 +61,7 @@ export class Roller extends ChessPiece {
     this.spriteImage = Resources.ChessPawn;
   }
   onAdd(engine: Engine): void {
+    if (Roller.globalTimer && Roller.globalTimer.scene !== this.scene) Roller.resetAutomation();
     if (Roller.globalTimer == null) {
       Roller.globalTimer = new ex.Timer({
         fcn: () => {
@@ -77,6 +81,20 @@ export class Roller extends ChessPiece {
   onRemove(engine: Engine): void {
     super.onRemove(engine);
     delete Roller.rollers[this.id];
+    Roller.rollerQueue = Roller.rollerQueue.filter(roller => roller !== this);
+    this.needsToRoll = false;
+    if (Object.keys(Roller.rollers).length === 0) Roller.resetAutomation();
+  }
+
+  static resetAutomation(): void {
+    const timer = Roller.globalTimer;
+    timer?.stop();
+    if (timer?.scene) timer.scene.removeTimer(timer);
+    Roller.globalTimer = null;
+    Roller.lastGlobalTick = 0;
+    Roller.rollers = {};
+    for (const roller of Roller.rollerQueue) roller.needsToRoll = false;
+    Roller.rollerQueue = [];
   }
 
   onTrigger(): void {
@@ -84,16 +102,23 @@ export class Roller extends ChessPiece {
     this.rollDice();
   }
   rollDice() {
-    this.playActivation();
-    this.needsToRoll = false;
-    let neighbours = this.getNeighbors();
-    for (let index in neighbours) {
-      let neighbour = neighbours[index as keyof typeof neighbours];
-      let children = neighbour?.children ?? [];
-      for (let child of children) {
-        if (typeof (child as any).rollDice === "function") {
-          (child as any).rollDice();
-          continue;
+    // Preserve connected-pawn propagation without recursion or duplicate triggers.
+    const pending: Roller[] = [this];
+    const visited = new Set<ex.Entity>();
+    for (let index = 0; index < pending.length; index++) {
+      const roller = pending[index];
+      if (visited.has(roller) || roller.isKilled()) continue;
+      visited.add(roller);
+      roller.playActivation();
+      roller.needsToRoll = false;
+      for (const neighbour of Object.values(roller.getNeighbors())) {
+        for (const child of neighbour?.children ?? []) {
+          if (child instanceof Roller) {
+            if (!visited.has(child)) pending.push(child);
+          } else if (!visited.has(child) && typeof (child as { rollDice?: unknown }).rollDice === "function") {
+            visited.add(child);
+            (child as ex.Entity & { rollDice(): void }).rollDice();
+          }
         }
       }
     }

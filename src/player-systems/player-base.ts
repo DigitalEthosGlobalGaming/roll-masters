@@ -346,8 +346,8 @@ export class PlayerBase extends ex.Actor implements InputHandler {
       targetPlayerPos.y = bounds.bottom;
     }
 
-    this.pos = targetPlayerPos;
-    camera.pos = targetPlayerPos;
+    if (!this.pos.equals(targetPlayerPos)) this.pos = targetPlayerPos.clone();
+    if (!camera.pos.equals(targetPlayerPos)) camera.pos = targetPlayerPos.clone();
   }
 
   removeBuildable(worldPosition: ex.Vector) {
@@ -519,7 +519,7 @@ export class PlayerBase extends ex.Actor implements InputHandler {
     }
     const previous = this.data[key];
     this.data[key] = data;
-    if (previous !== data && key !== "lifetime-energy") this.scene?.emit("ui-state-changed");
+    if (previous !== data && key !== "lifetime-energy") this.scene?.emit(key === "current-prestige-score" ? "ui-score-changed" : "ui-state-changed");
     if (key === "current-prestige-score" && Math.floor((previous ?? 0) / 1000000) !== Math.floor((data ?? 0) / 1000000)) this.playerUi?.refreshUpgrades();
     if (key === "prestige-points" && previous !== data) this.playerUi?.refreshUpgrades();
   }

@@ -6,6 +6,7 @@ import { Level } from "@src/level";
 import { safeInsets } from "./game-presentation";
 
 export class Modal extends Panel {
+  override readonly deferWhileHidden = true;
   onClose: () => void = () => { this.visible = false; };
   protected closeButton!: Button;
   private shade!: Panel;

@@ -13,8 +13,8 @@ import { Resources } from "@src/resources";
 
 export class PlayerUi extends Panel {
   playerActionsUi!: PlayerActionsUi;
-  private upgrades!: UpgradesModal;
-  private menus!: GameMenu;
+  private upgrades?: UpgradesModal;
+  private menus?: GameMenu;
   private context!: Label;
   private cancel!: Button;
   private score!: Label;
@@ -49,24 +49,46 @@ export class PlayerUi extends Panel {
     this.ascend.onClick = () => this.openUpgrades("upgrade-ui");
     this.playerActionsUi = this.addPanel("actions", PlayerActionsUi);
     this.playerActionsUi.onBuild = () => this.openMenu("build");
-    this.upgrades = this.addPanel("upgrades", UpgradesModal); this.upgrades.visible = false;
-    this.menus = this.addPanel("menus", GameMenu); this.menus.visible = false;
-    const close = () => { this.upgrades.visible = false; this.menus.visible = false; if (this.ownerPlayer) this.ownerPlayer.currentAction = "NONE"; this.invalidate(); };
-    this.upgrades.onClose = close; this.menus.onClose = close;
     this.context = this.addPanel("context", Label); this.context.fontSize = 14;
     this.cancel = this.addPanel("cancel", Button); this.cancel.text = "Done"; this.cancel.fontSize = 14; this.cancel.size = ex.vec(64, 44);
     this.cancel.onClick = () => { if (this.ownerPlayer) this.ownerPlayer.currentAction = "NONE"; };
     this.subscriptions.push({ close: () => clearTimeout(this.noticeTimer) });
-    this.subscriptions.push(this.scene!.on("ui-state-changed", () => this.invalidate()));
+    this.subscriptions.push(this.scene!.on("ui-state-changed", () => this.refreshUpgrades()));
+    this.subscriptions.push(this.scene!.on("ui-score-changed", () => {
+      this.invalidateState();
+      this.upgrades?.invalidateState();
+      // Build and upgrade costs remain current if a modal is open while scoring.
+      if (this.menus?.visible) this.menus.invalidateState();
+    }));
   }
-  openMenu(page: GameMenuPage = "menu"): void {
-    this.upgrades.visible = false;
+  private closeModals = () => {
+    if (this.upgrades) this.upgrades.visible = false;
+    if (this.menus) this.menus.visible = false;
     if (this.ownerPlayer) this.ownerPlayer.currentAction = "NONE";
+    this.invalidateState();
+  };
+  openMenu(page: GameMenuPage = "menu"): void {
+    if (this.upgrades) this.upgrades.visible = false;
+    if (this.ownerPlayer) this.ownerPlayer.currentAction = "NONE";
+    if (!this.menus) {
+      this.menus = this.addPanel("menus", GameMenu);
+      this.menus.onClose = this.closeModals;
+      this.menus.ensureSetup();
+      this.menus.onViewportChanged();
+      this.invalidateLayout();
+    }
     this.menus.open(page);
   }
   openUpgrades(tab: "upgrade-ui" | "prestige-ui"): void {
-    this.menus.visible = false;
+    if (this.menus) this.menus.visible = false;
     if (this.ownerPlayer) this.ownerPlayer.currentAction = "NONE";
+    if (!this.upgrades) {
+      this.upgrades = this.addPanel("upgrades", UpgradesModal);
+      this.upgrades.onClose = this.closeModals;
+      this.upgrades.ensureSetup();
+      this.upgrades.onViewportChanged();
+      this.invalidateLayout();
+    }
     this.upgrades.visible = true;
     this.upgrades.currentTab = tab;
     this.upgrades.invalidate();
@@ -80,7 +102,10 @@ export class PlayerUi extends Panel {
     this.menus?.onViewportChanged();
     this.invalidate();
   }
-  refreshUpgrades(): void { this.upgrades?.invalidate(); this.menus?.invalidate(); this.invalidate(); }
+  refreshUpgrades(): void {
+    this.upgrades?.invalidateState(); this.menus?.invalidateState();
+    this.playerActionsUi?.invalidateState(); this.invalidateState();
+  }
   override onRefresh(): void {
     const player = this.ownerPlayer;
     if (!player) return;
@@ -97,9 +122,6 @@ export class PlayerUi extends Panel {
         : !player.getData("actions.NEWROLLER") ? "Choose Dice, then tap an empty square" : "");
     this.context.collapsed = !this.context.text;
     this.cancel.collapsed = player.currentAction === "NONE";
-    this.playerActionsUi.invalidate();
-    this.upgrades.invalidate();
-    this.menus.invalidate();
   }
   override onLayout(): void {
     const stacked = this.width < 520;
@@ -113,6 +135,6 @@ export class PlayerUi extends Panel {
     this.cancel.bottomRight = ex.vec(this.width, this.playerActionsUi.top - 6);
     this.context.maxWidth = Math.max(40, this.width - (this.cancel.collapsed ? 0 : this.cancel.width + 12));
     this.context.bottomLeft = ex.vec(0, this.playerActionsUi.top - 12);
-    for (const modal of [this.upgrades, this.menus]) modal.pos = this.size.scale(0.5);
+    for (const modal of [this.upgrades, this.menus]) if (modal) modal.pos = this.size.scale(0.5);
   }
 }

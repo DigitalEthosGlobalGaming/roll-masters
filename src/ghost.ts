@@ -4,6 +4,7 @@ export class Ghost extends ex.Actor {
     
     constructor() {
         super({
+            collisionType: ex.CollisionType.PreventCollision,
             width: 16,
             height: 16,
         })

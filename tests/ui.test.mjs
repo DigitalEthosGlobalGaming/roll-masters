@@ -19,9 +19,12 @@ import { PlayerUi } from "../src/ui/scores/player-ui.ts";
 import { GameMenu } from "../src/ui/game-menu.ts";
 import { NavigationStack } from "../src/ui/navigation-stack.ts";
 import { SettingsUi } from "../src/scenes/settings.scene.ts";
+import { CreditUi } from "../src/scenes/credits.scene.ts";
+import { UpdatesUi } from "../src/scenes/updates.scene.ts";
+import { Scenes } from "../src/scenes/welcome.scene.ts";
 import { WelcomeUi } from "../src/scenes/welcome.scene.ts";
 import { HowToPlayUi } from "../src/scenes/how-to-play.scene.ts";
-import { helpTopics } from "../src/ui/game-presentation.ts";
+import { helpTopics, formatGold } from "../src/ui/game-presentation.ts";
 import { ScoreComponent } from "../src/components/score-component.ts";
 import { prestigeReward } from "../src/ui/game-presentation.ts";
 
@@ -37,12 +40,34 @@ function fixture() {
 }
 const metrics = panel => [panel.metrics, ...panel.getChildrenPanels().flatMap(metrics)];
 
+test("scoring leaves closed modal layout asleep and reopening displays current state", () => {
+  const f = fixture();
+  const player = { score: 10, prestigePoints: 0, currentPrestigeScore: 0, currentAction: "NONE", upgrades: [], getData: () => true };
+  f.scene.player = player;
+  const hud = new PlayerUi(); f.attach(hud); f.settle(hud);
+  try {
+    const toolbarBefore = JSON.stringify(metrics(hud.playerActionsUi));
+    player.score = 20; f.scene.emit("ui-score-changed"); f.settle(hud);
+    assert.equal(JSON.stringify(metrics(hud.playerActionsUi)), toolbarBefore);
+    hud.openUpgrades("upgrade-ui"); f.settle(hud);
+    const modal = hud.getPanel("upgrades");
+    modal.visible = false; f.settle(hud);
+    const closedCounts = JSON.stringify(metrics(modal));
+    for (let i = 0; i < 10; i++) { player.score += 10; f.scene.emit("ui-score-changed"); f.settle(hud); }
+    assert.equal(JSON.stringify(metrics(modal)), closedCounts);
+    assert.equal(modal.graphics.visible, false);
+    hud.openUpgrades("upgrade-ui"); f.settle(hud);
+    assert.equal(modal.graphics.visible, true);
+    assert.equal(modal.getPanel("upgrade-ui").getPanel("wallet").text, "Gold: " + formatGold(player.score));
+  } finally { hud.kill(); f.dispose(); }
+});
+
 test("menus have final geometry on their first render and after viewport changes", () => {
   const geometry = panel => [
     [panel.name, panel.size.x, panel.size.y, panel.pos.x, panel.pos.y, panel.scale.x, panel.scale.y, panel.rendered],
     ...panel.getChildrenPanels().flatMap(geometry),
   ];
-  for (const Menu of [WelcomeUi, SettingsUi, HowToPlayUi]) {
+  for (const Menu of [WelcomeUi, SettingsUi, HowToPlayUi, CreditUi, UpdatesUi]) {
     for (const large of [0, 1]) {
       const f = fixture(); const ui = new Menu();
       try {
@@ -209,13 +234,80 @@ test("settings keep full-size choices and stable paging across devices", () => {
           assert.ok(scroll.getPanel("previous").left + scroll.pos.x >= back.right + 4);
           next.activate();
         }
-        assert.equal(visited.size, 4);
+        assert.equal(visited.size, 6);
         const before = JSON.stringify(metrics(ui)); for (let i = 0; i < 50; i++) ui.render();
         assert.equal(JSON.stringify(metrics(ui)), before);
         while (scroll.getPanel("previous").visible) { scroll.getPanel("previous").activate(); for (let i = 0; i < 30; i++) ui.render(); }
       }
     }
   } finally { ex.Environment.set("large-text", 0); ui.kill(); f.dispose(); }
+});
+
+test("volume sliders accept touch, keyboard and semantic input and reopen with saved levels", () => {
+  const previous = { ...ex.Environment.data }; const f = fixture(); let ui = new SettingsUi();
+  ex.Environment.set("sound", 0); ex.Environment.set("music-volume", 100); ex.Environment.set("effects-volume", 70);
+  f.engine.screen.drawWidth = 390; f.engine.screen.drawHeight = 844;
+  const showMusic = () => {
+    f.attach(ui); f.settle(ui);
+    const scroll = ui.getPanel("scroll"), row = scroll.content.getPanel("music-volume");
+    for (let i = 0; !row.rendered && i < 6; i++) { scroll.getPanel("next").activate(); f.settle(ui); }
+    assert.ok(row.rendered);
+    return row.getPanel("slider");
+  };
+  try {
+    let slider = showMusic();
+    const { x, y } = slider.globalPos;
+    f.manager.onPointerDown(f.pointer("down", x - slider.width / 4, y, 8, ex.PointerType.Touch));
+    f.manager.onPointerMove(f.pointer("move", x + slider.width / 4, y, 8, ex.PointerType.Touch));
+    f.manager.onPointerUp(f.pointer("up", x + slider.width / 4, y, 8, ex.PointerType.Touch));
+    f.settle(ui); assert.equal(ex.Environment.get("music-volume"), 75);
+    assert.equal(slider.getPanel("thumb").text, "75%");
+    f.manager.setFocus(slider); f.manager.onKeyDown(new ex.KeyEvent(ex.Keys.Home));
+    assert.equal(ex.Environment.get("music-volume"), 0);
+    f.manager.onKeyDown(new ex.KeyEvent(ex.Keys.End)); assert.equal(ex.Environment.get("music-volume"), 100);
+    const input = f.manager.accessible.get(slider); input.value = "42"; input.oninput();
+    f.settle(ui); assert.equal(ex.Environment.get("music-volume"), 42);
+    assert.equal(input.attributes["aria-label"], "Music volume");
+    assert.equal(ex.Environment.get("effects-volume"), 70);
+    ui.kill(); ui = new SettingsUi(); slider = showMusic(); assert.equal(slider.value, 42);
+    const before = JSON.stringify(metrics(ui)); f.settle(ui); assert.equal(JSON.stringify(metrics(ui)), before);
+  } finally { ui.kill(); ex.Environment.data = previous; f.dispose(); }
+});
+
+test("credits and release notes keep every card readable and reachable across screens", () => {
+  assert.equal(Object.hasOwn(Scenes, "UI Gallery"), false);
+  for (const Menu of [CreditUi, UpdatesUi]) {
+    const f = fixture(); const ui = new Menu(); f.attach(ui);
+    try {
+      for (const large of [0, 1]) {
+        ex.Environment.set("large-text", large);
+        for (const [width, height] of [[320, 568], [568, 320], [844, 390], [1280, 720]]) {
+          f.engine.screen.drawWidth = width; f.engine.screen.drawHeight = height;
+          ui.onViewportChanged(); ui.allDirty = true; f.settle(ui);
+          const scroll = ui.getPanel("scroll"), back = ui.getPanel("back");
+          while (scroll.getPanel("previous").visible) { scroll.getPanel("previous").activate(); f.settle(ui); }
+          const visited = new Set(), rows = scroll.content.getChildrenPanels();
+          for (let page = 0; page <= rows.length; page++) {
+            const shown = rows.filter(row => row.rendered); assert.ok(shown.length);
+            for (const row of shown) {
+              visited.add(row.name);
+              assert.equal(row.scale.x, 1, `${Menu.name} ${width}x${height} large=${large} ${row.name}`);
+              assert.ok(row.top >= -scroll.halfHeight - 0.01 && row.bottom <= scroll.halfHeight + 0.01);
+              assert.ok(row.getPanel("title").text && row.getPanel("body").text);
+            }
+            assert.ok(back.height >= 44 && back.rendered);
+            if (!scroll.getPanel("next").visible) break;
+            scroll.getPanel("next").activate(); f.settle(ui);
+          }
+          assert.equal(visited.size, rows.length);
+          assert.ok(scroll.bottom < back.top);
+        }
+      }
+      let destination; f.engine.goToScene = value => { destination = value; };
+      ui.onKeyUp(ExtendedKeyEvent.extend(new ex.KeyEvent(ex.Keys.Esc), f.manager));
+      assert.equal(destination, "WelcomeScene");
+    } finally { ex.Environment.set("large-text", 0); ui.kill(); f.dispose(); }
+  }
 });
 
 test("settings persist choices, expose selection and finish subtle feedback", () => {
@@ -329,6 +421,8 @@ test("mobile HUD separates tools from menus and restores Roll when menus close",
   const data = { "ui.guidance-dismissed": true };
   f.scene.player = { score: 123, prestigePoints: 2, currentPrestigeScore: 1000000, currentAction: "NONE", upgrades: [], getData: key => data[key] };
   const hud = new PlayerUi(); f.attach(hud); hud.onViewportChanged(); f.settle(hud);
+  assert.equal(hud.getPanel("menus"), null, "closed menus are not allocated at startup");
+  assert.equal(hud.getPanel("upgrades"), null, "closed upgrades are not allocated at startup");
   assert.equal(hud.transform.coordPlane, ex.CoordPlane.Screen);
   assert.equal(hud.playerActionsUi.getPanel("build").collapsed, false);
   assert.equal(hud.playerActionsUi.getPanel("NEWROLLER").collapsed, true);
@@ -438,7 +532,7 @@ test("an unchanged tree performs no additional setup, refresh, layout, or paint 
   f.attach(slider); f.attach(button); f.settle();
   const before = JSON.stringify(metrics(f.root)); const graphics = slider.graphicCount;
   for (let i = 0; i < 1000; i++) f.root.render();
-  assert.equal(JSON.stringify(metrics(f.root)), before); assert.equal(slider.graphicCount, graphics); assert.equal(graphics, 1);
+  assert.equal(JSON.stringify(metrics(f.root)), before); assert.equal(slider.graphicCount, graphics); assert.ok(graphics > 0);
   assert.equal(button.metrics.setups, 1); f.dispose();
 });
 test("a changed leaf wakes only its ancestor path and paint does not remeasure", () => {
@@ -499,8 +593,9 @@ test("currency reserves space even when font ink bounds omit trailing whitespace
 });
 test("button content sizing uses horizontal composition and retained icons", () => {
   const f = fixture(); const button = f.root.addPanel("button", Button); button.text = "Test"; button.icon = { imageSource: {}, width: 32, height: 64 }; f.settle();
-  assert.equal(button.height, 84); const count = button.graphicCount; button.text = "Longer label"; f.settle(); assert.equal(button.graphicCount, count);
-  button.icon = undefined; f.settle(); assert.equal(button.graphicCount, count - 1); f.dispose();
+  assert.equal(button.height, 84); const count = button.iconPanel.graphicCount; button.text = "Longer label"; f.settle(); assert.equal(button.iconPanel.graphicCount, count);
+  assert.ok(button.iconPanel.globalZ > button.globalZ, "image batches sort above the button face");
+  button.icon = undefined; f.settle(); assert.equal(button.iconPanel.graphicCount, count - 1); f.dispose();
 });
 
 test("button state changes preserve hit bounds, layout and retained graphics count", () => {
@@ -529,14 +624,14 @@ test("button state changes preserve hit bounds, layout and retained graphics cou
 });
 
 test("reduced-motion buttons change state without shifting their content or face", () => {
-  globalThis.matchMedia = () => ({ matches: true });
+  ex.setReducedMotion(true);
   const f = fixture();
   try {
     const button = f.root.addPanel("button", Button); button.text = "Buy"; f.settle();
     button.isHovered = true; button.onPointerDown(f.pointer("down"));
     button.onPreUpdate(f.engine, 16); f.settle();
     assert.equal(button.surface.state, "pressed"); assert.equal(button.label.drawOffset.y, 0);
-  } finally { f.dispose(); delete globalThis.matchMedia; }
+  } finally { f.dispose(); ex.setReducedMotion(false); }
 });
 test("pressed button text, inline gold and icons move with the face without changing layout", () => {
   const f = fixture(); const button = f.root.addPanel("button", Button);

@@ -10,6 +10,7 @@ export class Vector {
 }
 export const vec = (x, y) => new Vector(x, y);
 export const CoordPlane = { World: "world", Screen: "screen" };
+export const CollisionType = { PreventCollision: "prevent", Passive: "passive" };
 export class BoundingBox {
   constructor(left = 0, top = 0, right = 0, bottom = 0) { Object.assign(this, { left, top, right, bottom }); }
   get width() { return this.right - this.left; }
@@ -32,7 +33,7 @@ class Events {
 }
 let id = 0;
 export class Entity extends Events {
-  constructor() { super(); this.id = ++id; this.name = ""; this.parent = null; this.children = []; this.scene = null; this.isActive = true; this.pos = vec(0, 0); this.scale = vec(1, 1); this.z = 0; }
+  constructor() { super(); this.id = ++id; this.name = ""; this.parent = null; this.children = []; this.scene = null; this.isActive = true; if (!("pos" in this)) this.pos = vec(0, 0); this.scale = vec(1, 1); this.z = 0; }
   get globalZ() { return this.z + (this.parent?.globalZ ?? 0); }
   get globalPos() { return (this.parent?.globalPos ?? vec(0, 0)).add(this.pos); }
   getAncestors() { return this.parent ? [...this.parent.getAncestors(), this] : [this]; }
@@ -41,10 +42,25 @@ export class Entity extends Events {
   isKilled() { return !this.isActive; }
   kill() { this.isActive = false; this.emit("kill"); this.parent?.removeChild(this); }
   onAdd() {} onRemove() {} onPreUpdate() {}
+  removeComponent() { return this; }
+  addComponent(component) { component.owner = this; return this; }
+}
+export class TransformComponent {
+  pos = vec(0, 0);
+  get globalPos() { return (this.owner?.parent?.globalPos ?? vec(0, 0)).add(this.pos); }
 }
 export class Actor extends Entity {
-  graphics = { opacity: 1, use() {} };
+  constructor(options = {}) { super(); this.body = { collisionType: options.collisionType ?? CollisionType.Passive }; }
+  graphics = { opacity: 1, current: undefined, items: new Map(), add(name, graphic) { this.items.set(name, graphic); return graphic; }, use(graphic) { this.current = typeof graphic === "string" ? this.items.get(graphic) : graphic; return this.current; } };
   transform = { get: () => ({ matrix: {}, applyInverse: point => point.sub(this.globalPos) }) };
+}
+export const AnimationStrategy = { Freeze: "freeze" };
+export class Animation { constructor(options) { Object.assign(this, options); this.events = new Events(); } }
+export const lerpVector = (a, b, t) => vec(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
+export class Timer {
+  constructor(options) { Object.assign(this, options); this.isRunning = false; }
+  start() { this.isRunning = true; return this; }
+  stop() { this.isRunning = false; return this; }
 }
 export class Level extends Events {
   entities = [];
@@ -86,7 +102,13 @@ export const getNineslice = () => new NineSlice();
 export const getUiBackground = getNineslice;
 export const Resources = { Dollar: {} };
 export const SoundManager = { play() {} };
-export const Environment = { isDev: false, data: {}, get(key) { return this.data[key]; }, set(key, value) { this.data[key] = value; } };
+const environmentListeners = new Set();
+const motionListeners = new Set();
+const reducedMotionMedia = { matches: false, addEventListener(_name, listener) { motionListeners.add(listener); } };
+globalThis.matchMedia = () => reducedMotionMedia;
+export function setReducedMotion(matches) { reducedMotionMedia.matches = matches; for (const listener of motionListeners) listener(); }
+export const Settings = { graphics: { advanced: 0, basic: 1 }, sound: { all: 0, nomusic: 1, Off: 2 } };
+export const Environment = { isDev: false, data: {}, onChange(listener) { environmentListeners.add(listener); return { close: () => environmentListeners.delete(listener) }; }, get(key, fallback) { return this.data[key] ?? fallback; }, set(key, value) { if (this.data[key] === value) return; this.data[key] = value; for (const listener of environmentListeners) listener(); } };
 export class BaseComponent {
   get player() { return this._player; }
   get playerUi() { return this.player.playerUi; }

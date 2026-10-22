@@ -130,6 +130,9 @@ addUpdate("2026-10-22", "Features", "Settings now show every choice, with cleare
 
 addUpdate("2026-10-22", "Features", "Buttons now have crisp drawn gold frames, green faces, and a gentle press response that respects reduced motion.");
 
+addUpdate("2026-10-22", "Features", "Added separate music and sound effects volume sliders, with saved levels and live audio updates.");
+addUpdate("2026-10-22", "Features", "Credits and release notes now use the game menu styling and mobile paging. Removed the UI gallery entry from the main menu.");
+
 export const gameUpdates = Object.values(updates)
   .filter((item) => item.date >= showAfter)
   .sort((a, b) => {

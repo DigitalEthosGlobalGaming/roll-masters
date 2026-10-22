@@ -1,8 +1,20 @@
 import * as ex from "excalibur";
-import { Serializable } from "@src/systems/save-system";
+import type { Serializable } from "@src/systems/save-system";
 import { GridSystem } from "./grid-system";
 
-export class GridSpace extends ex.Actor implements Serializable {
+// Cells are transform/serialization containers. The cached board draws them,
+// and InputManager locates them by coordinates; they need no actor systems.
+export class GridSpace extends ex.Entity implements Serializable {
+  readonly transform = new ex.TransformComponent();
+
+  constructor() {
+    super();
+    this.addComponent(this.transform);
+  }
+
+  get pos(): ex.Vector { return this.transform.pos; }
+  set pos(value: ex.Vector) { this.transform.pos = value; }
+  get globalPos(): ex.Vector { return this.transform.globalPos; }
   static serializeName: string = "GridSpace";
   serializeId?: string | undefined;
   _gridPos: ex.Vector | null = null;
@@ -23,6 +35,7 @@ export class GridSpace extends ex.Actor implements Serializable {
   }
 
   set gridIndex(newIndex: number) {
+    if (this._gridIndex === newIndex) return;
     this._gridPos = null;
     this._gridIndex = newIndex;
   }

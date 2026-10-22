@@ -1,7 +1,9 @@
-import { SoundKey, SoundPaths, Sounds } from "@src/resources";
+import { SoundPaths, Sounds } from "@src/resources";
+import type { SoundKey } from "@src/resources";
 import { random } from "@src/utility/random";
 import { Environment, Settings } from "@src/env";
 import * as ex from "excalibur";
+import { audioVolume } from "@src/settings/audio-settings";
 export class SoundManager {
   static _instance: SoundManager | null = null;
   static get instance() {
@@ -14,6 +16,7 @@ export class SoundManager {
     SoundManager.instance.play(sound);
   }
   static initialise(engine: ex.Engine) {
+    if (SoundManager._instance) return;
     SoundManager._instance = new SoundManager(engine);
   }
 
@@ -35,6 +38,8 @@ export class SoundManager {
     } catch (e) {
       console.error(e);
     }
+    Environment.onChange(() => this.applySettings());
+    this.applySettings();
   }
   play(sound: ex.Sound | keyof typeof Sounds) {
     if (Environment.get("sound") === Settings.sound.Off) return;
@@ -44,7 +49,9 @@ export class SoundManager {
       }
     }
     if (sound instanceof ex.Sound) {
-      sound.play();
+      const music = this.soundtracks.some(key => Sounds[key] === sound);
+      sound.volume = audioVolume(music ? "music-volume" : "effects-volume");
+      if (sound.volume > 0) sound.play();
     }
   }
   soundtracks: SoundKey[] = [
@@ -57,7 +64,10 @@ export class SoundManager {
   lastPlayedMusic: ex.Sound | null = null;
 
   applySettings(): void {
-    if (this.lastPlayedMusic) this.lastPlayedMusic.volume = Environment.get("sound") === Settings.sound.all ? 1 : 0;
+    for (const key of Object.keys(Sounds) as SoundKey[]) {
+      const sound = Sounds[key];
+      if (sound) sound.volume = audioVolume(this.soundtracks.includes(key) ? "music-volume" : "effects-volume");
+    }
   }
 
   tick() {}

@@ -2,6 +2,7 @@ import * as ex from "excalibur";
 import { FloatingScore } from "@src/ui/scores/floating-score";
 import { BaseComponent } from "./base-component";
 import { Environment } from "@src/env";
+import { motionPreferences } from "@src/settings/motion-preferences";
 
 /** Currency is committed before visual feedback; animation never owns game state. */
 export class ScoreComponent extends BaseComponent {
@@ -14,7 +15,7 @@ export class ScoreComponent extends BaseComponent {
     this._score = next;
     this.renderScore();
   }
-  renderScore(): void { this.owner?.scene?.emit("ui-state-changed"); }
+  renderScore(): void { this.owner?.scene?.emit("ui-score-changed"); }
   updateScore(points: number): void {
     this.score += points;
     if (points > 0) {
@@ -28,7 +29,7 @@ export class ScoreComponent extends BaseComponent {
     this.updateScore(value);
     const engine = this.owner.scene?.engine;
     const target = this.playerUi.getPanel("score");
-    if (!engine || !target || Environment.get("hide-floating-gold") || Environment.get("reduced-motion") || globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    if (!engine || !target || Environment.get("hide-floating-gold") || motionPreferences.reduced) return;
     const maxInstances = Math.max(5, Math.floor((engine.stats.currFrame.fps ?? 60) / 2));
     if (FloatingScore.numberOfInstances >= Math.min(50, maxInstances)) return;
     const destination = engine.screenToWorldCoordinates(target.globalPos);

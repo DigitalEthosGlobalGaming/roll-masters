@@ -8,6 +8,8 @@ export enum PanelBackgrounds { Panel = "Panel", Button = "Button" }
 
 /** Retained widget: setup once, refresh state, measure/arrange, then paint. */
 export class Panel extends ex.Actor implements InputHandler {
+  readonly deferWhileHidden: boolean = false;
+  private get updatesDeferred(): boolean { return this.deferWhileHidden && !this.rendered; }
   /** Instance-owned listeners survive detach/re-add and close on kill. */
   subscriptions: ex.Subscription[] = [];
   private attachmentSubscriptions: ex.Subscription[] = [];
@@ -40,7 +42,8 @@ export class Panel extends ex.Actor implements InputHandler {
   readonly metrics = { setups: 0, refreshes: 0, layouts: 0, paints: 0 };
 
   constructor(parent?: Panel | null) {
-    super();
+    super({ collisionType: ex.CollisionType.PreventCollision });
+    this.removeComponent(ex.PointerComponent, true);
     this.graphics.use(this.graphicsGroup);
     parent?.addChild(this);
   }
@@ -54,11 +57,13 @@ export class Panel extends ex.Actor implements InputHandler {
   }
   get isChildDirty(): boolean { return this.panels.some(child => child.subtreeDirty); }
   private wake() {
-    if (this.subtreeDirty) return;
+    if (this.subtreeDirty && (!this.parentPanel || this.parentPanel.subtreeDirty)) return;
     this.subtreeDirty = true;
     this.parentPanel?.wake();
   }
   invalidate() { this.refreshDirty = true; this.invalidateLayout(); }
+  /** Refresh state; property setters request layout only when geometry actually changes. */
+  invalidateState() { this.refreshDirty = true; this.wake(); }
   invalidatePaint() { this.paintDirty = true; this.wake(); }
   invalidateLayout() {
     this.layoutDirty = true;
@@ -88,6 +93,8 @@ export class Panel extends ex.Actor implements InputHandler {
     this.invalidateVisibility();
   }
   private invalidateVisibility() {
+    this.graphics.visible = this.rendered;
+    InputManager.updateAccessibility(this);
     this.refreshDirty = true;
     this.invalidatePaint();
     for (const child of this.panels) child.invalidateVisibility();
@@ -280,11 +287,13 @@ export class Panel extends ex.Actor implements InputHandler {
     if (this.backgroundGraphic) this.backgroundGraphic.tint = this.backgroundTint;
   }
   private refreshTree() {
+    if (this.updatesDeferred) return;
     this.ensureSetup();
     if (this.refreshDirty) { this.refreshDirty = false; this.metrics.refreshes++; this.onRefresh(); }
     for (const child of this.panels) if (child.subtreeDirty) child.refreshTree();
   }
   private layoutTree() {
+    if (this.updatesDeferred) return;
     for (const child of this.panels) if (child.subtreeDirty) child.layoutTree();
     if (!this.layoutDirty) return;
     this.layoutDirty = false;
@@ -293,6 +302,7 @@ export class Panel extends ex.Actor implements InputHandler {
     this.onLayout();
   }
   private paintTree() {
+    if (this.updatesDeferred) return;
     if (this.paintDirty) {
       this.paintDirty = false;
       this.metrics.paints++;
@@ -302,10 +312,10 @@ export class Panel extends ex.Actor implements InputHandler {
       InputManager.updateAccessibility(this);
     }
     for (const child of this.panels) if (child.subtreeDirty) child.paintTree();
-    this.subtreeDirty = this.refreshDirty || this.layoutDirty || this.paintDirty || this.panels.some(child => child.subtreeDirty);
+    this.subtreeDirty = this.refreshDirty || this.layoutDirty || this.paintDirty || this.panels.some(child => !child.updatesDeferred && child.subtreeDirty);
   }
   private hasPendingLayout(): boolean {
-    return this.refreshDirty || this.layoutDirty || this.panels.some(child => child.hasPendingLayout());
+    return !this.updatesDeferred && (this.refreshDirty || this.layoutDirty || this.panels.some(child => child.hasPendingLayout()));
   }
   /** Resolve dependent geometry before painting; cap work for unstable layouts. */
   render(): void {
@@ -325,6 +335,7 @@ export class Panel extends ex.Actor implements InputHandler {
   override onAdd(engine: ex.Engine): void {
     super.onAdd(engine);
     this.attachedScene = this.scene;
+    this.graphics.visible = this.rendered;
     this.ensureSetup();
     InputManager.register(this);
     if (!this.parentPanel) {

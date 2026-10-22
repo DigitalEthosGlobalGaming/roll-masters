@@ -14,7 +14,9 @@ export class PieceFeedback {
   constructor(private style: PieceMotionStyle) {}
 
   advance(elapsed: number) {
+    if (this.elapsed >= (this.moving ? this.travelDuration + settleDuration : 180) && !this.contacts.length) return;
     this.elapsed += Math.max(0, elapsed);
+    if (!this.contacts.length) return;
     const progress = this.travelProgress;
     const ready = this.contacts.filter(contact => contact.progress <= progress);
     this.contacts = this.contacts.filter(contact => contact.progress > progress);

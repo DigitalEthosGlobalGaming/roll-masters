@@ -31,6 +31,9 @@ const { AtlasButtonSkin } = await import(`data:text/javascript,${encodeURICompon
 const surfaceSource = stripTypeScriptTypes(readFileSync(new URL("../src/ui/elements/button-surface.ts", import.meta.url), "utf8"))
   .replace('from "excalibur"', `from "${engineUrl}"`);
 const { ButtonSurface } = await import(`data:text/javascript,${encodeURIComponent(surfaceSource)}`);
+const boardSource = stripTypeScriptTypes(readFileSync(new URL("../src/graphics/board.ts", import.meta.url), "utf8"))
+  .replace('from "excalibur"', `from "${engineUrl}"`);
+const { createBoardGraphic, boardPadding } = await import(`data:text/javascript,${encodeURIComponent(boardSource)}`);
 
 class DrawRecorder {
   matrix = ex.AffineMatrix.identity(); stack = []; draws = []; opacity = 1;
@@ -51,6 +54,23 @@ class DrawRecorder {
     this.draws.push({ left: start.x, top: start.y, right: end.x, bottom: end.y, tint: this.tint, source: args.length === 8 ? args.slice(0, 4) : undefined });
   }
 }
+
+test("cached board rasterizes once and preserves its frame bounds through camera transforms", () => {
+  const board = createBoardGraphic(16, 16, 32, 32, ex.Color.fromHex("#20352e"));
+  const execute = board.execute.bind(board);
+  let rasterizations = 0;
+  board.execute = ctx => { rasterizations++; execute(ctx); };
+  for (const zoom of [0.5, 1, 2]) {
+    const ctx = new DrawRecorder(); ctx.translate(100, 50); ctx.scale(zoom, zoom);
+    for (let i = 0; i < 10; i++) board.draw(ctx, -boardPadding, -boardPadding);
+    assert.equal(ctx.draws.length, 10);
+    assert.equal(ctx.draws[0].left, 100 - boardPadding * zoom);
+    assert.equal(ctx.draws[0].right, 100 + (512 + boardPadding) * zoom);
+  }
+  assert.equal(rasterizations, 1);
+  const larger = createBoardGraphic(18, 18, 32, 32, ex.Color.fromHex("#20352e"));
+  assert.equal(larger.width, 576 + boardPadding * 2);
+});
 
 test("procedural frames draw every state inside short, long, tall and tiny button bounds", () => {
   for (const [width, height] of [[48, 48], [220, 48], [360, 56], [72, 120], [10.5, 2.5]]) {

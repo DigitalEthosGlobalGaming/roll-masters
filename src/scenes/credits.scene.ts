@@ -1,36 +1,14 @@
 import * as ex from "excalibur";
 import { Level } from "@src/level";
-import { ScreenPanel } from "@src/ui/screen-panel";
-import { Label } from "@src/ui/elements/label";
-import { Button } from "@src/ui/elements/button";
+import { InformationScreen } from "@src/ui/information-screen";
 
-const creditElements: any[] = [
-  "Trent Jones - Developer",
-  "--------------------------------",
-  "Game Engine - Excalibur",
-  "     https://excaliburjs.com/",
-  "",
-  "Assets - Kenney.nl",
-  "     https://kenney.nl/",
-  " ",
-];
-
-class CreditUi extends ScreenPanel {
-  onSetup(): void {
-
-    const list = this.content;
-    for (const element of creditElements) {
-      const label = list.addPanel(element, Label);
-      label.fontSize = 30;
-      label.text = element;
-    }
-
-    const button = this.addPanel("back", Button);
-    button.text = "Back";
-    button.fontSize = 20;
-    button.onClick = () => {
-      this.scene?.engine.goToScene("WelcomeScene");
-    };
+export class CreditUi extends InformationScreen {
+  constructor() {
+    super("Credits", "The people and tools behind Roll Masters.", [
+      { title: "Development", body: "Trent Jones" },
+      { title: "Game engine", body: "Excalibur\nhttps://excaliburjs.com/" },
+      { title: "Game assets", body: "Kenney\nhttps://kenney.nl/" },
+    ]);
   }
 }
 

@@ -3,7 +3,8 @@ import { Panel } from "./panel";
 import { Label } from "./elements/label";
 import { helpTopics } from "./game-presentation";
 import { Button } from "./elements/button";
-import { SettingsRow } from "./settings-content";
+import { SettingsRow, SettingsVolumeRow } from "./settings-content";
+import { InformationCard } from "./information-card";
 import type { ScrollPanel } from "./scroll-panel";
 
 /** One complete instruction per card, wrapped before the paging container measures it. */
@@ -57,7 +58,7 @@ export function addHelpContent(parent: Panel): void {
 /** Wrap text before the paging container measures its cards. */
 export function wrapContent(parent: Panel, width: number): void {
   for (const child of parent.getChildrenPanels()) {
-    if (child instanceof SettingsRow || child instanceof HelpCard) { child.setLayoutWidth(width); continue; }
+    if (child instanceof SettingsRow || child instanceof SettingsVolumeRow || child instanceof HelpCard || child instanceof InformationCard) { child.setLayoutWidth(width); continue; }
     if (child instanceof Button) {
       child.maxTextWidth = Math.max(40, width - child.padding * 2 - (child.icon ? child.icon.width + 10 : 12));
       continue;

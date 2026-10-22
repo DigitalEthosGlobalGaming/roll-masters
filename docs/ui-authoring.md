@@ -5,6 +5,11 @@ measurement, invalidation, and graphics; base widgets have no player lookup.
 Game-specific presenters supply state and callbacks. Named children are reused,
 and a conflicting constructor for an existing child name throws an error.
 
+Panels remove Excalibur's built-in `PointerComponent`. Bind widget input through
+the shared `InputManager` and its `InputHandler` hooks; actor pointer events do
+not receive widget hit tests. This avoids maintaining a second hit-testing grid
+alongside the custom touch, keyboard and accessibility dispatcher.
+
 ## Hooks
 
 | Hook | Responsibility | Avoid |
@@ -30,6 +35,13 @@ when geometry changes, and `invalidatePaint()` for visual state only. Widget
 setters already choose the appropriate invalidation. `dirty = true` remains a
 compatibility alias for refresh; `allDirty = true` is for rare whole-tree refreshes
 such as a newly loaded font. Prefer updating the specific view that changed.
+
+Use `invalidateState()` for a state-only refresh: derived property setters will
+request layout if text or dimensions actually change. Game HUD score events use
+this path and do not refresh the toolbar or closed menu trees. In-game modals are
+created when first opened. Modals opt into `deferWhileHidden`: hiding updates
+graphics/input visibility immediately while preserving refresh/layout dirtiness
+until reopening. Ordinary hidden panels still retain their measurement behavior.
 
 `metrics` exposes setup, refresh, layout, and paint counts. `graphicCount` exposes
 retained graphics. For an unchanged settled tree, 1,000 calls to `render()` must

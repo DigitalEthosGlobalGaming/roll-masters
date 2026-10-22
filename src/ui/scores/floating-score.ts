@@ -8,6 +8,7 @@ export class FloatingScore extends ex.Actor {
 
   constructor(worldPos: ex.Vector, screenPos: ex.Vector) {
     super({
+      collisionType: ex.CollisionType.PreventCollision,
       pos: worldPos,
       width: 32,
       height: 32,

@@ -80,7 +80,7 @@ reports, coverage gates, and the separate real-engine Chromium smoke suite.
 The configured CI workflow runs headless smoke tests automatically; for local
 agent work, retain the explicit browser-use requirement above.
 `src/scenes/test/user-interface/` contains manual UI examples. Its gallery is
-available from the welcome menu in development builds only. If the user requests
+available through `?ui-gallery` in development builds only, outside the main menu. If the user requests
 browser verification, report checks actually
 performed and use an isolated browser profile/origin for tests that replace saved
 progress. Consider mobile touch, layout, and orientation in any requested UI checks.

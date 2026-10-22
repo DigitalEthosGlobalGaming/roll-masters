@@ -6,10 +6,8 @@ import { Label } from "@src/ui/elements/label";
 import { Button } from "@src/ui/elements/button";
 import { safeInsets } from "@src/ui/game-presentation";
 
-const development = import.meta.env?.DEV ?? false;
 export const Scenes: Record<string, string> = {
   Help: "HowToPlayScene", Settings: "SettingsScene", Updates: "UpdatesScene", Credits: "CreditScene",
-  ...(development ? { "UI Gallery": "TestUserInterfaceScene" } : {}),
 };
 
 /** Supporting actions page as complete rows; play always stays visible. */

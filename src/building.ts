@@ -97,9 +97,12 @@ export class Building extends ex.Actor implements Serializable {
     const width = 24;
     const height = 24;
     super({
+      collisionType: ex.CollisionType.PreventCollision,
       width: width,
       height: height,
     });
+    // Board interaction is dispatched by InputManager, not actor pointer events.
+    this.removeComponent(ex.PointerComponent, true);
   }
   serialize(): any {
     return null;
@@ -116,6 +119,7 @@ export class Building extends ex.Actor implements Serializable {
   }
 
   updateScale() {
+    if (this.scale.x === this.wishScale && this.scale.y === this.wishScale) return;
     const xDistance = Math.abs(this.scale.x - this.wishScale);
     const yDistance = Math.abs(this.scale.y - this.wishScale);
     if (xDistance < 0.1 && yDistance < 0.1) {
@@ -142,6 +146,7 @@ export class Building extends ex.Actor implements Serializable {
   }
 
   updatePosition() {
+    if (this.pos.x === this.wishPos.x && this.pos.y === this.wishPos.y) return;
     const speed = this.speed;
     const xDistance = Math.abs(this.pos.x - this.wishPos.x);
     const yDistance = Math.abs(this.pos.y - this.wishPos.y);

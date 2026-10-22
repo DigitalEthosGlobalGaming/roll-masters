@@ -1,5 +1,4 @@
 import * as ex from "excalibur";
-import { Grid } from "@src/graphics/grid";
 import { GridSpace } from "./grid-space";
 import { GridSystem } from "./grid-system";
 import { InputHandler, InputManager } from "@src/input/input-manager";
@@ -36,6 +35,7 @@ class GridSpaceGhost extends ex.Actor {
     if (this.isGraphicsSetups) {
       return;
     }
+    this.isGraphicsSetups = true;
     this.graphics.add(
       "hide",
       new ex.Rectangle({
@@ -132,22 +132,13 @@ export class DiceGameGridSystem extends GridSystem implements InputHandler {
       this.addChild(this.ghost);
       this.ghost.visible = false;
     }
-    this.graphics.use(
-      new Grid({
-        rows: this.size.x,
-        columns: this.size.y,
-        cellWidth: this.spaceSize.x,
-        cellHeight: this.spaceSize.y,
-        color: ex.Color.fromHex("#172622"),
-        thickness: 1,
-      })
-    );
+    // Empty spaces are created on demand by placement/neighbour queries.
+    // The cached scene artwork draws the board independently of cell actors.
+  }
 
-    for (let i = 0; i < this.size.x; i++) {
-      for (let j = 0; j < this.size.y; j++) {
-        this.getSpace(new ex.Vector(i, j));
-      }
-    }
+  override onRemove(engine: ex.Engine): void {
+    InputManager.unregister(this, this.scene);
+    super.onRemove(engine);
   }
 
   getSpaceBounds(position: ex.Vector) {

@@ -1,4 +1,5 @@
 import * as ex from "excalibur";
+import { motionPreferences } from "@src/settings/motion-preferences";
 import { Panel } from "@src/ui/panel";
 import type { Tooltip } from "@src/player-systems/player-tooltip";
 import { Label } from "./label";
@@ -7,13 +8,13 @@ import type { SoundKey } from "@src/resources";
 import { ExtendedPointerEvent } from "@src/input/extended-pointer-event";
 import { theme } from "../theme";
 import { ButtonSurface } from "./button-surface";
-import { Environment } from "@src/env";
 
 export type ButtonIcon = { imageSource: ex.ImageSource; width: number; height: number };
 export class Button extends Panel {
   protected label: Label;
   private _icon?: ButtonIcon;
   private sprite?: ex.Sprite;
+  private readonly iconPanel: Panel;
   private iconMember?: { graphic: ex.Graphic; offset: ex.Vector };
   private iconDirty = false;
   private _iconPlacement: "beside" | "above" = "beside";
@@ -25,7 +26,7 @@ export class Button extends Panel {
   }
   private _tooltip?: Tooltip;
   private activationPressed = false;
-  private get quietMotion(): boolean { return !!Environment.get("reduced-motion") || (globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false); }
+  private get quietMotion(): boolean { return motionPreferences.reduced; }
   sound: SoundKey = "ChipLay2";
   private _quiet = false;
   get quiet(): boolean { return this._quiet; }
@@ -44,6 +45,10 @@ export class Button extends Panel {
     this.acceptingInputs = ["MouseLeft"];
     this.padding = theme.padding;
     this.surfaceMember = this.addGraphic(this.surface);
+    // Separate depth keeps image batches above the procedural rectangle face.
+    this.iconPanel = this.addPanel("icon", Panel);
+    this.iconPanel.z = 1;
+    this.iconPanel.size = ex.vec(0, 0);
     this.label = this.addPanel("label", Label);
     // Text must sort above its parent's background, including equal-depth screen UI batches.
     this.label.z = 1;
@@ -139,12 +144,12 @@ export class Button extends Panel {
     this.label.color = this.disabled ? theme.muted : this.color;
     if (this.iconDirty) {
       this.iconDirty = false;
-      if (this.sprite) this.removeGraphic(this.sprite);
+      if (this.sprite) this.iconPanel.removeGraphic(this.sprite);
       this.sprite = this.icon ? ex.Sprite.from(this.icon.imageSource) : undefined;
       this.iconMember = undefined;
       if (this.sprite && this.icon) {
         this.sprite.destSize = { width: this.icon.width, height: this.icon.height };
-        this.iconMember = this.addGraphic(this.sprite);
+        this.iconMember = this.iconPanel.addGraphic(this.sprite);
       }
     }
     if (this.sprite && this.icon && this.iconMember) {

@@ -1,6 +1,7 @@
 // One bounded pulse per die, regardless of how many buildings boost it at once.
 export const diceBoostDuration = 420;
 const readoutDuration = 650;
+const rest = { scaleX: 1, scaleY: 1, y: 0, ringRadius: 15, ringOpacity: 0, readoutOpacity: 0 };
 
 export class DiceBoostFeedback {
   private elapsed = Infinity;
@@ -16,11 +17,13 @@ export class DiceBoostFeedback {
   }
 
   advance(elapsed: number) {
+    if (this.elapsed >= diceBoostDuration && this.readoutElapsed >= readoutDuration) return;
     this.elapsed += Math.max(0, elapsed);
     this.readoutElapsed += Math.max(0, elapsed);
   }
 
   pose(quiet = false) {
+    if (this.elapsed >= diceBoostDuration && this.readoutElapsed >= readoutDuration) return rest;
     const t = Math.min(1, this.elapsed / diceBoostDuration);
     const active = t < 1 && !quiet;
     // Compress, spring upwards, then settle without moving the actor or hitbox.
