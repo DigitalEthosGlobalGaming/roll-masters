@@ -7,6 +7,11 @@ import * as ex from "excalibur";
 import { diceFrameDurations, diceSettleDuration, diceSettlePose, diceTumblePose, restingDicePose } from "./dice-feedback";
 import { DiceBoostFeedback } from "./dice-boost-feedback";
 import { motionPreferences } from "@src/settings/motion-preferences";
+import { SoundManager } from "@src/sound-manager";
+import type { SoundKey } from "@src/resources";
+
+const diceRollSounds: SoundKey[] = ["DiceThrow1", "DiceThrow2", "DiceThrow3", "DieThrow1", "DieThrow2", "DieThrow3", "DieThrow4"];
+const diceLandSounds: SoundKey[] = ["DiceLand1", "DiceLand2", "DiceLand3", "DiceLand4"];
 
 const possibleRolls: { [key: number]: { [face: number]: number[][] } } = {};
 const totalPossibleRolls = 100;
@@ -363,6 +368,7 @@ export class Dice extends Building implements Serializable {
     }
 
 
+    SoundManager.playVaried("dice-roll", diceRollSounds, { maxVoices: 3, volume: 0.5 });
     if (Environment.get("graphics") == Settings.graphics.basic) {
       this.rollBasic();
       return;
@@ -392,6 +398,7 @@ export class Dice extends Building implements Serializable {
     this.rolling = false;
     this.feedbackElapsed = 0;
     this.wishScale = 1;
+    SoundManager.playVaried("dice-land", diceLandSounds, { maxVoices: 4, volume: this.value === 6 ? 0.45 : 0.3 });
     let score = this.player.getUpgrade("BetterDice")?.value ?? 0;
     let totalScore = Math.floor(this.value * this.multiplier) + score;
     this.multiplier = 1;

@@ -154,19 +154,55 @@ export class Upgrade {
   }
 
   onBuy() { }
-  buy() {
+
+  /** Cost of buying the level after `level` (mirrors `nextCost`). */
+  costAtLevel(level: number): number {
+    if (level == 0) {
+      return this.baseCost;
+    }
+    return Math.floor(growthFunctions[this._costType](level + 1, this._baseCost));
+  }
+
+  /**
+   * How many levels can be bought in one go (up to `limit`, or as many as `balance` affords
+   * when `limit` is Infinity) and what they cost in total. Always at least one level is priced
+   * so the UI can show the cost of the next purchase even when it is unaffordable.
+   */
+  planPurchase(limit: number, balance: number): { count: number; cost: number } {
+    const remaining = this.maxLevel == -1 ? Infinity : this.maxLevel - this.level;
+    const cap = Math.min(limit, remaining);
+    let count = 0;
+    let cost = 0;
+    const fitToBalance = limit === Infinity;
+    while (count < cap) {
+      const next = this.costAtLevel(this.level + count);
+      if (fitToBalance && cost + next > balance) break;
+      cost += next;
+      count++;
+      if (!Number.isFinite(cost) || count >= 100000) break;
+    }
+    if (count == 0 && cap > 0) {
+      // Unaffordable "max": price one level so the button can show what is needed.
+      return { count: 1, cost: this.costAtLevel(this.level) };
+    }
+    return { count, cost };
+  }
+
+  buy(limit: number = 1) {
     if (this.isMaxLevel || !this.canResearch) {
       return false;
     }
-
-    let didBuy = false;
-    if (this.type == "RESEARCH") {
-      didBuy = this.player.spendEnergy(this.nextCost);
-    } else {
-      didBuy = this.player.spendPrestigePoints(this.nextCost);
+    const balance = this.type == "RESEARCH" ? this.player.score : this.player.prestigePoints;
+    const plan = this.planPurchase(limit, balance);
+    if (plan.count == 0) {
+      return false;
     }
+    // A fixed-size bulk buy is all-or-nothing; "buy max" (Infinity) already fits the balance.
+    const didBuy = this.type == "RESEARCH"
+      ? this.player.spendEnergy(plan.cost)
+      : this.player.spendPrestigePoints(plan.cost);
     if (didBuy) {
-      this._level++;
+      this._level += plan.count;
       this.calculate();
       this.onBuy();
       return true;

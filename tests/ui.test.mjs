@@ -510,7 +510,7 @@ test("desktop prestige shows three compact upgrades without unnecessary paging",
     ["GRID_SIZE", "Grid Size", "Board: 16 Ãƒâ€” 16 Ã¢â€ â€™ 17 Ãƒâ€” 17", 1],
     ["DICE_WEIGHT", "Dice Weight", "Average roll bonus: +0% Ã¢â€ â€™ +10%\nMore rolls land on six.", 2],
     ["PASSIVE_BOOST", "Passive Gold Boost", "Passive gold bonus: 0% Ã¢â€ â€™ 100%", 1],
-  ].map(([code, name, description, nextCost]) => ({ code, name, description, nextCost, nextValue: 1, value: 0, cost: 0, level: 0, type: "PRESTIGE", canResearch: true, isMaxLevel: false, player }));
+  ].map(([code, name, description, nextCost]) => ({ code, name, description, nextCost, nextValue: 1, value: 0, cost: 0, level: 0, type: "PRESTIGE", canResearch: true, isMaxLevel: false, player, planPurchase() { return { count: 1, cost: this.nextCost }; } }));
   f.scene.player = player;
   const modal = f.root.addPanel("upgrades", UpgradesModal); f.attach(modal); modal.currentTab = "prestige-ui";
   for (let i = 0; i < 30; i++) f.root.render();
@@ -719,7 +719,7 @@ test("modal scope blocks background pointer/semantics and Escape restores focus"
   f.manager.onKeyUp(new ex.KeyEvent(ex.Keys.Esc)); assert.equal(modal.visible, false); assert.equal(button.focused, true); f.dispose();
 });
 test("upgrade rows reconcile removals including transition to the empty state", () => {
-  const f = fixture(); const upgrade = { code: "A", name: "Test", type: "RESEARCH", canResearch: true, level: 0, isMaxLevel: false, nextCost: 10, nextValue: 1, cost: 0, value: 0, description: "Cost {nextCost}", buy() {} };
+  const f = fixture(); const upgrade = { code: "A", name: "Test", type: "RESEARCH", canResearch: true, level: 0, isMaxLevel: false, nextCost: 10, nextValue: 1, cost: 0, value: 0, description: "Cost {nextCost}", buy() {}, planPurchase() { return { count: 1, cost: this.nextCost }; } };
   f.scene.player = { upgrades: [upgrade], currentPrestigeScore: 0, prestigePoints: 0 };
   const ui = f.root.addPanel("upgrade", UpgradeUi); f.attach(ui); f.settle(); const content = ui.getPanel("rows").content;
   assert.equal(content.hasPanel("A"), true); upgrade.canResearch = false; ui.invalidate(); f.settle(); assert.equal(content.hasPanel("A"), false); assert.equal(content.getPanel("info").collapsed, false); f.dispose();

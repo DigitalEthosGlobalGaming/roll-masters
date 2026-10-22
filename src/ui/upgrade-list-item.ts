@@ -3,6 +3,7 @@ import { Button } from "./elements/button";
 import { Label } from "./elements/label";
 import { Panel } from "./panel";
 import { formatGold } from "./game-presentation";
+import { buyMode } from "./buy-mode";
 import * as ex from "excalibur";
 
 export class UpgradeListItem extends Panel {
@@ -22,7 +23,7 @@ export class UpgradeListItem extends Panel {
   override onSetup(): void {
     this.surfaceMember = this.addGraphic(this.surface);
     this.buy = this.addPanel("buy", Button); this.buy.fontSize = 16;
-    this.buy.onClick = () => { if (this.upgrade?.canResearch && this.upgrade.buy()) { this.upgrade.player.getScene().save(); this.onBuy(); } this.invalidate(); };
+    this.buy.onClick = () => { if (this.upgrade?.canResearch && this.upgrade.buy(buyMode.limit)) { this.upgrade.player.getScene().save(); this.onBuy(); } this.invalidate(); };
     this.title = this.addPanel("title", Label); this.title.fontSize = 20; this.title.align = "left"; this.title.color = ex.Color.fromHex("#e1c99d");
     this.description = this.addPanel("description", Label); this.description.fontSize = 16; this.description.align = "left"; this.description.color = ex.Color.fromHex("#c6c3b9");
   }
@@ -37,10 +38,12 @@ export class UpgradeListItem extends Panel {
     this.description.text = description;
     const balance = upgrade.type === "RESEARCH" ? upgrade.player?.score ?? 0 : upgrade.player?.prestigePoints ?? 0;
     this.buy.collapsed = upgrade.isMaxLevel;
-    const affordable = balance >= upgrade.nextCost;
+    const plan = upgrade.planPurchase(buyMode.limit, balance);
+    const affordable = balance >= plan.cost;
     this.buy.disabled = !affordable || !upgrade.canResearch;
-    const currency = upgrade.type === "RESEARCH" ? " gold" : upgrade.nextCost === 1 ? " point" : " points";
-    this.buy.text = (affordable ? "Upgrade · " : "Need ") + formatGold(upgrade.nextCost) + currency;
+    const currency = upgrade.type === "RESEARCH" ? " gold" : plan.cost === 1 ? " point" : " points";
+    const multiplier = buyMode.mode === "one" ? "" : " (x" + plan.count + ")";
+    this.buy.text = (affordable ? "Upgrade" + multiplier + " · " : "Need ") + formatGold(plan.cost) + currency;
     this.buy.tooltip = { code: upgrade.code, title: this.title.text, description };
     const textWidth = this.availableWidth - 32 - (this.inline && !this.buy.collapsed ? this.buy.width + 20 : 0);
     this.title.maxWidth = Math.max(40, textWidth);

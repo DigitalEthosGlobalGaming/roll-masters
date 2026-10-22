@@ -6,6 +6,7 @@ import { ScrollPanel } from "./scroll-panel";
 import { UpgradeListItem } from "./upgrade-list-item";
 import { Level } from "@src/level";
 import { formatGold } from "./game-presentation";
+import { buyMode } from "./buy-mode";
 
 export class UpgradeUi extends Panel {
   onNavigate: (tab: "upgrade-ui" | "prestige-ui") => void = () => {};
@@ -17,6 +18,9 @@ export class UpgradeUi extends Panel {
   protected section!: Label;
   private completed!: Button;
   private showCompleted = false;
+  private buyTen!: Button;
+  private buyMax!: Button;
+  private unsubscribeBuyMode?: () => void;
   protected get player() { return this.scene instanceof Level ? this.scene.player : undefined; }
   protected get upgradeType(): "RESEARCH" | "PRESTIGE" { return "RESEARCH"; }
   override onSetup(): void {
@@ -32,6 +36,18 @@ export class UpgradeUi extends Panel {
     this.prestigeButton = this.addPanel("prestige", Button); this.prestigeButton.fontSize = 18;
     this.prestigeButton.text = "Prestige";
     this.prestigeButton.onClick = () => this.onNavigate("prestige-ui");
+    this.buyTen = this.addPanel("buy-ten", Button); this.buyTen.fontSize = 16; this.buyTen.text = "x10";
+    this.buyTen.tooltip = { code: "buy-ten", title: "Buy 10", description: "Buy 10 levels at once. Hold Ctrl for the same effect." };
+    this.buyTen.onClick = () => buyMode.setToggle("ten");
+    this.buyMax = this.addPanel("buy-max", Button); this.buyMax.fontSize = 16; this.buyMax.text = "Max";
+    this.buyMax.tooltip = { code: "buy-max", title: "Buy max", description: "Buy as many levels as you can afford. Hold Shift for the same effect." };
+    this.buyMax.onClick = () => buyMode.setToggle("max");
+    this.unsubscribeBuyMode = buyMode.subscribe(() => this.invalidate());
+  }
+  override kill(): void {
+    this.unsubscribeBuyMode?.();
+    this.unsubscribeBuyMode = undefined;
+    super.kill();
   }
   override onRefresh(): void {
     const player = this.player;
@@ -54,6 +70,8 @@ export class UpgradeUi extends Panel {
       row.onBuy = () => this.invalidate(); row.invalidate();
     }
     this.prestigeButton.visible = true;
+    this.buyTen.selected = buyMode.mode === "ten";
+    this.buyMax.selected = buyMode.mode === "max";
   }
   protected get extraHeaderHeight(): number { return 0; }
   override onLayout(): void {
@@ -65,6 +83,9 @@ export class UpgradeUi extends Panel {
       this.wallet.pos = ex.vec(-this.halfWidth + this.wallet.halfWidth, this.title.bottom + 8 + this.wallet.halfHeight);
       this.prestigeButton.pos = ex.vec(-this.halfWidth + this.prestigeButton.halfWidth, this.halfHeight - this.prestigeButton.halfHeight);
       this.section.collapsed = true;
+      const toggleTop = this.prestigeButton.top - 12 - this.buyTen.height;
+      this.buyTen.pos = ex.vec(-this.halfWidth + this.buyTen.halfWidth, toggleTop + this.buyTen.halfHeight);
+      this.buyMax.pos = ex.vec(this.buyTen.right + 8 + this.buyMax.halfWidth, this.buyTen.pos.y);
       this.scroll.size = ex.vec(this.width - summaryWidth - 16, this.height);
       this.scroll.pos = ex.vec(-this.halfWidth + summaryWidth + 16 + this.scroll.halfWidth, -this.halfHeight + this.scroll.halfHeight);
       this.info.maxWidth = this.scroll.width;
@@ -78,7 +99,9 @@ export class UpgradeUi extends Panel {
     this.wallet.pos = ex.vec(-this.halfWidth + this.wallet.halfWidth, this.title.bottom + 10 + this.wallet.halfHeight);
     this.prestigeButton.pos = ex.vec(0, this.halfHeight - this.prestigeButton.halfHeight);
     this.section.pos = ex.vec(-this.halfWidth + this.section.halfWidth, this.wallet.bottom + 24 + this.extraHeaderHeight + this.section.halfHeight);
-    const top = this.section.bottom + 12;
+    this.buyMax.pos = ex.vec(this.halfWidth - this.buyMax.halfWidth, this.section.pos.y);
+    this.buyTen.pos = ex.vec(this.buyMax.left - 8 - this.buyTen.halfWidth, this.section.pos.y);
+    const top = Math.max(this.section.bottom, this.buyTen.bottom) + 12;
     this.scroll.size = ex.vec(this.width, Math.max(1, this.prestigeButton.top - top - 12));
     this.scroll.pos = ex.vec(0, top + this.scroll.halfHeight);
     this.info.maxWidth = this.width;
