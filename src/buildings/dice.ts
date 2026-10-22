@@ -4,6 +4,8 @@ import { Resources } from "@src/resources";
 import { Serializable } from "@src/systems/save-system";
 import { random } from "@src/utility/random";
 import * as ex from "excalibur";
+import { diceFrameDurations, diceSettleDuration, diceSettlePose, diceTumblePose, restingDicePose } from "./dice-feedback";
+import { DiceBoostFeedback } from "./dice-boost-feedback";
 
 const possibleRolls: { [key: number]: { [face: number]: number[][] } } = {};
 const totalPossibleRolls = 100;
@@ -74,8 +76,8 @@ function getRollAnimation(faces: number, speed: number, face: number) {
 
   const sprites = diceResources.map((r) => {
     const sprite = ex.Sprite.from(r);
-    sprite.width = 16;
-    sprite.height = 16;
+    sprite.width = 24;
+    sprite.height = 24;
     return sprite;
   });
 
@@ -86,11 +88,11 @@ function getRollAnimation(faces: number, speed: number, face: number) {
   }[] = [];
 
   const totalDuration = random.number(minRollDuration, maxRollDuration) / speed;
-  const rollDuration = totalDuration / diceNumbers.length;
+  const durations = diceFrameDurations(diceNumbers.length, totalDuration);
 
   for (const i in diceNumbers) {
     const newNumber = diceNumbers[i];
-    const duration = rollDuration
+    const duration = durations[Number(i)];
 
     frameData.push({
       number: newNumber,
@@ -109,7 +111,7 @@ function getRollAnimation(faces: number, speed: number, face: number) {
     speed: 1,
     strategy: ex.AnimationStrategy.Freeze,
   });
-  return { numbers: diceNumbers, animation: animation };
+  return { numbers: diceNumbers, animation: animation, duration: totalDuration };
 }
 
 function getRandomRollAnimation(
@@ -119,6 +121,7 @@ function getRandomRollAnimation(
 ): {
   animation: ex.Animation;
   numbers: number[];
+  duration: number;
 } {
   let face = Math.min(random.integer(1, faces + weight), 6);
   return getRollAnimation(faces, speed, face)
@@ -132,6 +135,17 @@ export class Dice extends Building implements Serializable {
   private _speed: number = 1;
   private _value: number = 0;
   private _multiplier: number = 1;
+  private feedbackElapsed = diceSettleDuration;
+  private feedbackRollDuration = 1;
+  private feedbackDirection = 1;
+  private reducedMotion?: MediaQueryList;
+  private readonly boostFeedback = new DiceBoostFeedback();
+  private boostReadout?: ex.Text;
+  private readonly boostGold = ex.Color.fromHex("#ffd878");
+
+  private get quietMotion(): boolean {
+    return Environment.get("graphics") === Settings.graphics.basic || !!Environment.get("reduced-motion") || this.reducedMotion?.matches === true;
+  }
 
   private _weight: number = -1;
   get weight(): number {
@@ -153,7 +167,10 @@ export class Dice extends Building implements Serializable {
     return this._multiplier;
   }
   set multiplier(value: number) {
+    const previous = this._multiplier;
     this._multiplier = Math.round(value * 10) / 10;
+    this.boostFeedback.boost(this._multiplier - previous);
+    if (this.boostReadout) this.boostReadout.text = `x${this._multiplier}`;
     const clampedValue = Math.min(10, Math.max(0, value));
     const yellowIntensity = Math.floor((clampedValue / 10) * 255);
     this.color = ex.Color.fromRGB(255, 255, 255 - yellowIntensity);
@@ -206,11 +223,50 @@ export class Dice extends Building implements Serializable {
   onInitialize(engine: ex.Engine): void {
     super.onInitialize(engine);
     this.player.unlockAction("NEWROLLER");
+    this.reducedMotion = globalThis.matchMedia?.("(prefers-reduced-motion: reduce)");
+    this.boostReadout = new ex.Text({
+      text: `x${this.multiplier}`,
+      color: this.boostGold,
+      font: new ex.Font({
+        family: "sans-serif", size: 7, bold: true,
+        textAlign: ex.TextAlign.Center, baseAlign: ex.BaseAlign.Middle,
+        shadow: { offset: ex.vec(0, 1), blur: 2, color: ex.Color.Black },
+      }),
+    });
+    this.graphics.onPreDraw = (ctx, elapsed) => {
+      ctx.save();
+      const boost = this.boostFeedback.pose(this.quietMotion);
+      if (boost.ringOpacity > 0) {
+        ctx.drawCircle(ex.Vector.Zero, boost.ringRadius, ex.Color.Transparent,
+          ex.Color.fromRGB(255, 216, 120, boost.ringOpacity), 1);
+      }
+      // Newly selected roll faces must retain the stored multiplier's tint too.
+      if (this.graphics.current instanceof ex.Sprite) this.graphics.current.tint = this.color;
+      this.feedbackElapsed += elapsed;
+      const pose = this.quietMotion ? restingDicePose : this.rolling
+        ? diceTumblePose(this.feedbackElapsed / this.feedbackRollDuration, this.feedbackDirection)
+        : diceSettlePose(this.feedbackElapsed, this.value === 6);
+      ctx.translate(pose.x, pose.y);
+      ctx.rotate(pose.rotation);
+      ctx.scale(pose.scaleX, pose.scaleY);
+      ctx.translate(0, boost.y);
+      ctx.scale(boost.scaleX, boost.scaleY);
+    };
+    this.graphics.onPostDraw = ctx => {
+      ctx.restore();
+      const boost = this.boostFeedback.pose(this.quietMotion);
+      if (this.multiplier > 1 && boost.readoutOpacity > 0 && this.boostReadout) {
+        ctx.save();
+        ctx.opacity *= boost.readoutOpacity;
+        this.boostReadout.draw(ctx, 0, -16);
+        ctx.restore();
+      }
+    };
 
     for (const i in diceResources) {
       const sprite = ex.Sprite.from(diceResources[i]);
-      sprite.width = 16;
-      sprite.height = 16;
+      sprite.width = 24;
+      sprite.height = 24;
       this.graphics.add('roll-' + i, sprite);
     }
     if (Environment.get("graphics") == Settings.graphics.basic) {
@@ -218,6 +274,11 @@ export class Dice extends Building implements Serializable {
     }
 
   }
+  onPreUpdate(engine: ex.Engine, elapsed: number): void {
+    this.boostFeedback.advance(elapsed);
+    super.onPreUpdate(engine, elapsed);
+  }
+
   serialize() {
     return {
       faces: this.faces,
@@ -268,7 +329,6 @@ export class Dice extends Building implements Serializable {
     let randomAmount = random.number(740, 1000);
     this.tickRate = randomAmount;
     this.nextTick = randomAmount;
-    this.wishScale = random.number(0.7, 0.9);
     this.rolling = true;
   }
 
@@ -304,24 +364,14 @@ export class Dice extends Building implements Serializable {
     const faces = this.faces;
     const roll = getRandomRollAnimation(faces, speed, this.weight);
     const animation = roll.animation;
+    this.feedbackElapsed = 0;
+    this.feedbackRollDuration = roll.duration;
+    this.feedbackDirection = this.feedbackDirection * -1;
     this.value = roll.numbers[roll.numbers.length - 1];
 
     this.graphics.add("roll", animation, {});
     this.graphics.use("roll");
-    let originalPosition = this.pos.clone();
-    animation.events.on("frame", (frame) => {
-      if (frame.frameIndex < roll.numbers.length) {
-        const offset = random.integer(2, 4);
-        this.pos = ex.vec(
-          random.number(-offset, offset),
-          random.number(-offset, offset)
-        );
-      } else {
-        this.pos = ex.vec(0, 0);
-      }
-    });
-    animation.events.on("end", () => {
-      this.pos = originalPosition;
+    animation.events.once("end", () => {
       this.onRollFinish();
       if (animation.currentFrame?.graphic != null) {
         this.graphics.add("roll", animation.currentFrame?.graphic);
@@ -332,6 +382,7 @@ export class Dice extends Building implements Serializable {
 
   onRollFinish() {
     this.rolling = false;
+    this.feedbackElapsed = 0;
     this.wishScale = 1;
     let score = this.player.getUpgrade("BetterDice")?.value ?? 0;
     let totalScore = Math.floor(this.value * this.multiplier) + score;

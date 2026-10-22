@@ -1,13 +1,10 @@
-@font-face {
-  font-family: 'DS-DIGI';
-  src: url('../fonts/DS-DIGI.TTF');
-  font-weight: normal;
-  font-style: normal;
-}
-
 
 html, body {
-  background-color: black;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  background-color: #141719;
   margin: 0;
   padding: 0;
   height: 100%;
@@ -16,8 +13,10 @@ html, body {
 
 
 body {
-  font-family: "ds-digi";
+  font-family: sans-serif;
   display: flex;
   justify-content: center;
   align-items: center;
 }
+/* Semantic controls remain available to screen readers without overlaying the canvas. */
+.canvas-controls { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

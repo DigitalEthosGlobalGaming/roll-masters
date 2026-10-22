@@ -23,12 +23,8 @@ export class FloatingScore extends ex.Actor {
         resolve(0);
       });
     }
-    const sprite = ex.Sprite.from(Resources.SuitDiamonds);
-    sprite.width = 10;
-    sprite.height = 10;
-
-    // Tint the sprite to gold color
-    sprite.tint = ex.Color.fromRGB(255, 215, 0);
+    const sprite = ex.Sprite.from(Resources.Dollar);
+    sprite.destSize = { width: 10, height: 10 };
     this.graphics.use(sprite);
 
     return new Promise<number>((resolve) => {

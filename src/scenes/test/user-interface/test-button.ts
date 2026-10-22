@@ -81,9 +81,4 @@ export class TestButtonPanel extends TestPanelContainer {
         iconAndTextButton.pos = ex.vec(0, iconButton.pos.y + iconButton.bottom + iconAndTextButton.halfHeight + 10);
     }
 
-    onRender(): void {
-        super.onRender();
-        this.setup();
-    }
-
 }

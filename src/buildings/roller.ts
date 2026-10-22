@@ -1,11 +1,11 @@
-import { Building } from "@src/building";
+import { ChessPiece } from "./chess-piece";
 import { Resources } from "@src/resources";
 import * as ex from "excalibur";
 import { Engine, Timer } from "excalibur";
 import { random } from "@src/utility/random";
 
 
-export class Roller extends Building {
+export class Roller extends ChessPiece {
   static serializeName: string = "Roller";
   friendlyName: string = "Pawn";
   get tooltip(): string | null {
@@ -54,7 +54,7 @@ export class Roller extends Building {
     }
   }
   constructor() {
-    super();
+    super("pawn");
     this.spriteImage = Resources.ChessPawn;
   }
   onAdd(engine: Engine): void {
@@ -84,6 +84,7 @@ export class Roller extends Building {
     this.rollDice();
   }
   rollDice() {
+    this.playActivation();
     this.needsToRoll = false;
     let neighbours = this.getNeighbors();
     for (let index in neighbours) {

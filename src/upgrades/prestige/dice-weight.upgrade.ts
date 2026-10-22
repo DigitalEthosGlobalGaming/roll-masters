@@ -69,7 +69,8 @@ export class DiceWeightUpgrade extends Upgrade {
   get description(): string {
     const nextImprovement = Math.floor(getWeightedDiePercentageImprovement(this.nextValue));
     const parts = [
-      `{nextCost}⏣ - Increases the chance of a dice higher by (${Math.floor(nextImprovement)}%)`,
+      `Average roll bonus: +${Math.floor(getWeightedDiePercentageImprovement(this.value))}% → +${nextImprovement}%`,
+      "More rolls land on six.",
     ];
 
     return parts.join("\n");

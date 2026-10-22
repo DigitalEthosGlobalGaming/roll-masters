@@ -1,26 +1,7 @@
 import * as ex from "excalibur";
-import { ButtonStates, InputManager } from "./input-manager";
-
+import type { ButtonStates, InputManager } from "./input-manager";
 export class ExtendedKeyEvent extends ex.KeyEvent {
-    inputManager!: InputManager;
-
-    static extend(
-        evt: ex.KeyEvent,
-        manager: InputManager
-    ): ExtendedKeyEvent {
-        if (evt instanceof ExtendedKeyEvent) {
-            return evt;
-        }
-        Object.setPrototypeOf(evt, ExtendedKeyEvent.prototype);
-
-        let extended = evt as ExtendedKeyEvent;
-        extended.inputManager = manager;
-        return extended;
-    }
-
-
-
-    isDown(button: ButtonStates): boolean {
-        return this.inputManager.buttonStates[button] ?? false;
-    }
+  constructor(evt: ex.KeyEvent, readonly inputManager: InputManager) { super(evt.key, evt.value, evt.originalEvent); }
+  static extend(evt: ex.KeyEvent, manager: InputManager): ExtendedKeyEvent { return new ExtendedKeyEvent(evt, manager); }
+  isDown(button: ButtonStates): boolean { return this.inputManager.isDown(button); }
 }

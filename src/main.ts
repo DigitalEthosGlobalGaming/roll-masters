@@ -10,30 +10,15 @@ import { PrestigeScene } from "./scenes/prestige.scene";
 import { SettingsScene } from "./scenes/settings.scene";
 import { GameScene } from "./scenes/game.scene";
 
-async function waitForFontLoad(font: string, timeout = 2000, interval = 100) {
-  return new Promise((resolve, reject) => {
-    // repeatedly poll check
-    const poller = setInterval(async () => {
-      try {
-        await document.fonts.load(font);
-      } catch (err) {
-        reject(err);
-      }
-      if (document.fonts.check(font)) {
-        clearInterval(poller);
-        resolve(true);
-      }
-    }, interval);
-    setTimeout(() => clearInterval(poller), timeout);
-  });
-}
+import { waitForFontLoad } from "./ui/font-loader";
 
 let soundsLoaded = false;
 // Load font before game start
-waitForFontLoad("24px DS-DIGI").then(() => {
+waitForFontLoad("24px sans-serif").then(() => {
   const game = new ex.Engine({
-    backgroundColor: ex.Color.fromHex("#000000"),
-    pixelArt: false,
+    backgroundColor: ex.Color.fromHex("#141719"),
+    // Excalibur's blended pixel-art sampler smooths edges at fractional zooms.
+    pixelArt: true,
     displayMode: ex.DisplayMode.FillScreen,
     scenes: {
       WelcomeScene,
@@ -49,7 +34,7 @@ waitForFontLoad("24px DS-DIGI").then(() => {
 
   const loader = new GameLoader();
   game.start(loader).then(() => {
-    game.goToScene("GameScene");
+    game.goToScene(import.meta.env.DEV && new URLSearchParams(location.search).has("ui-gallery") ? "TestUserInterfaceScene" : "WelcomeScene");
   });
 
   document.addEventListener("click", () => {

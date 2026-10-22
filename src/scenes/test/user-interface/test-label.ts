@@ -24,6 +24,7 @@ export class TestLabelPanel extends TestPanelContainer {
       if (this.currentPosIndex >= positionsToSet.length) {
         this.currentPosIndex = 0;
       }
+      this.removeAllPanels();
       this.setup();
     }
   }
@@ -62,15 +63,4 @@ export class TestLabelPanel extends TestPanelContainer {
     }
   }
 
-  render(): void {
-    super.render();
-    if (this.currentPosIndex != 0) {
-      this.level.drawDebug({
-        type: "circle",
-        pos: this.pos,
-        radius: 10,
-        color: ex.Color.Red,
-      });
-    }
-  }
 }

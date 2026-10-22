@@ -1,27 +1,12 @@
 import { Label } from "@src/ui/elements/label";
-
-export type Tooltip = {
-  code: string;
-  title: string;
-  description: string;
-};
-
+export type Tooltip = { code: string; title: string; description: string };
 export class PlayerTooltip extends Label {
-  _tooltip: Tooltip | null = null;
-
-  get tooltip(): Tooltip | null {
-    return this._tooltip;
-  }
+  private _tooltip: Tooltip | null = null;
+  get tooltip(): Tooltip | null { return this._tooltip; }
   set tooltip(value: Tooltip | null) {
-    if (value == null) {
-      this.visible = false;
-      return;
-    } else {
-      this.visible = true;
-    }
     this._tooltip = value;
-    this.text = `${value.title}\n${value.description}`;
+    this.visible = value !== null;
+    this.text = value ? `${value.title}\n${value.description}` : "";
     this.align = "left";
-    this.dirty = true;
   }
 }

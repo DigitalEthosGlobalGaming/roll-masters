@@ -131,7 +131,13 @@ export class Level extends ex.Scene {
   }
 
 
-  onKeyUp(_evt: ExtendedKeyEvent): void {
+  override onDeactivate(context: ex.SceneActivationContext): void {
+    this.inputSystem?.suspend();
+    super.onDeactivate(context);
+  }
+
+  onKeyUp(evt: ExtendedKeyEvent): void {
+    if (evt.key === ex.Keys.Escape) this.engine.goToScene("WelcomeScene");
   }
   onKeyDown(_evt: ExtendedKeyEvent): void {
   }

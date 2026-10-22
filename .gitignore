@@ -5,3 +5,13 @@ dist-ssr
 *.local
 test/images/actual.png
 test/images/diff-*.png
+tmp/game-assets/
+.claude/skills/game-feel
+.agents/skills/game-feel
+reports/
+playwright-report/
+test-results/
+.claude/skills/retro
+.agents/skills/retro
+.claude/skills/game-ui-ux
+.agents/skills/game-ui-ux

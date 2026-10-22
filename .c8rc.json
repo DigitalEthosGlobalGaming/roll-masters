@@ -1,0 +1,11 @@
+{
+  "all": true,
+  "src": ["src"],
+  "extension": [".ts"],
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.d.ts", "src/scenes/test/**"],
+  "exclude-after-remap": true,
+  "reporter": ["text-summary", "html", "lcovonly", "json-summary"],
+  "reports-dir": "reports/coverage",
+  "temp-directory": "reports/coverage/.tmp"
+}

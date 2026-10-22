@@ -1,126 +1,59 @@
 import * as ex from "excalibur";
 import { Level } from "@src/level";
-import { Panel } from "@src/ui/panel";
+import { ScreenPanel } from "@src/ui/screen-panel";
 import { Label } from "@src/ui/elements/label";
-import { List } from "@src/ui/elements/list";
 import { Button } from "@src/ui/elements/button";
-import { Environment } from "@src/env";
+import { addSettingsContent } from "@src/ui/settings-content";
+import { wrapContent } from "@src/ui/help-content";
+import { safeInsets } from "@src/ui/game-presentation";
+import { PanelBackgrounds } from "@src/ui/panel";
+import type { ExtendedKeyEvent } from "@src/input/extended-key-event";
 
-
-const settingsItems = [{
-  name: "Graphics",
-  code: "graphics",
-  defaultValue: 0,
-  options: [{
-    label: "Advanced",
-    value: 0
-  },
-  {
-    label: "Basic",
-    value: 1
-  }]
-},
-{
-  name: "Sound",
-  code: "sound",
-  defaultValue: 0,
-  visible: false,
-  options: [{
-    label: "All",
-    value: 0
-  }, {
-    label: "No Music",
-    value: 1
-  }, {
-    label: "Off",
-    value: 2
-  }]
-}];
-
-const settingLabels: any = {};
-for (const i in settingsItems) {
-  for (const j in settingsItems[i].options) {
-    const option = settingsItems[i].options[j];
-    settingLabels[settingsItems[i].code + "-" + option.value] = option.label;
+export class SettingsUi extends ScreenPanel {
+  private title!: Label;
+  private note!: Label;
+  override onSetup(): void {
+    this.background = PanelBackgrounds.Panel;
+    this.acceptingInputs = [ex.Keys.Esc];
+    this.title = this.addPanel("title", Label); this.title.text = "Settings"; this.title.fontSize = 30;
+    this.note = this.addPanel("note", Label); this.note.text = "Changes save automatically"; this.note.fontSize = 14;
+    this.note.color = ex.Color.fromHex("#b5b9ae");
+    this.title.z = this.note.z = 1;
+    this.scroll.useFooterNavigation();
+    addSettingsContent(this.content);
+    const back = this.addPanel("back", Button); back.text = "Back";
+    back.onClick = () => { this.scene?.engine.goToScene("WelcomeScene"); };
+  }
+  onKeyUp(event: ExtendedKeyEvent): void {
+    if (event.key === ex.Keys.Esc) this.getPanel<Button>("back")?.activate();
+  }
+  override onViewportChanged(): void {
+    const inset = safeInsets();
+    const width = Math.max(1, this.screenWidth - inset.left - inset.right - 24);
+    const height = Math.max(1, this.screenHeight - inset.top - inset.bottom - (this.screenHeight < 450 ? 12 : 24));
+    this.size = ex.vec(Math.min(840, width), Math.min(820, height));
+    this.pos = ex.vec(inset.left + (this.screenWidth - inset.left - inset.right) / 2,
+      inset.top + (this.screenHeight - inset.top - inset.bottom) / 2);
+  }
+  override onLayout(): void {
+    const padding = 20;
+    const back = this.getPanel<Button>("back")!;
+    this.title.maxWidth = this.width - padding * 2;
+    const compact = this.screenHeight < 450 && this.width >= 460;
+    this.title.topLeft = ex.vec(-this.halfWidth + padding, -this.halfHeight + (compact ? 12 : padding));
+    this.note.maxWidth = compact ? this.width - this.title.width - padding * 3 : this.width - padding * 2;
+    if (compact) this.note.rightCenter = ex.vec(this.halfWidth - padding, this.title.center.y);
+    else this.note.topLeft = ex.vec(-this.halfWidth + padding, this.title.bottom + 6);
+    back.bottomLeft = ex.vec(-this.halfWidth + padding, this.halfHeight - 12);
+    const top = Math.max(this.note.bottom, this.title.bottom) + (compact ? 12 : 20);
+    const bottom = back.top - 12;
+    this.scroll.size = ex.vec(Math.max(1, this.width - padding * 2), Math.max(1, bottom - top));
+    this.scroll.pos = ex.vec(0, (top + bottom) / 2);
+    wrapContent(this.content, this.scroll.width);
   }
 }
-
-class Ui extends Panel {
-  get formData() {
-    const data: any = {};
-    for (const i in settingsItems) {
-      const element = settingsItems[i];
-      const code = element.code;
-      data[code] = Environment.get(code);
-    }
-    return data;
-  }
-  set formData(value: any) {
-    for (const i in settingsItems) {
-      const element = settingsItems[i];
-      const code = element.code;
-      if (value[code] !== undefined) {
-        Environment.set(code, value[code]);
-      }
-    }
-  }
-  onRender(): void {
-    super.onRender();
-    this.size = this.screenSize.scale(0.9);
-    this.pos = this.screenSize.scale(0.5);
-
-    const list = this.addPanel("list", List);
-    list.spacing = 15;
-    const data = this.formData;
-
-    const label = list.addPanel(`label-Title`, Label);
-    label.fontSize = 40;
-    label.text = "Settings";
-
-    for (const elementIndex in settingsItems) {
-      const element = settingsItems[elementIndex];
-      if (element.visible !== false) {
-        const label = list.addPanel(`label-${element.name}`, Label);
-        label.fontSize = 20;
-        label.text = element.name;
-        const value = data[element.code] ?? element.defaultValue;
-        const button = list.addPanel("button-" + element.code, Button);
-        button.text = settingLabels[element.code + "-" + value];
-        button.fontSize = 16;
-        button.onPointerUp = () => {
-          let newValue = value + 1;
-          if (newValue >= element.options.length) {
-            newValue = 0;
-          }
-
-          this.formData = {
-            [element.code]: value + 1 >= element.options.length ? 0 : value + 1
-          }
-          this.dirty = true;
-        }
-      }
-    }
-
-    const button = list.addPanel("back-button", Button);
-    button.text = "Back";
-    button.fontSize = 16;
-    button.onClick = () => {
-      this.scene?.engine.goToScene("WelcomeScene");
-    };
-  }
-}
-
 export class SettingsScene extends Level {
-  mainPanel!: Ui;
-  onActivate(context: ex.SceneActivationContext): void {
-    super.onActivate(context);
-    this.mainPanel = new Ui();
-    this.add(this.mainPanel);
-  }
-
-  onDeactivate(context: ex.SceneActivationContext): void {
-    super.onDeactivate(context);
-    this.mainPanel?.kill();
-    this.remove(this.mainPanel);
-  }
+  private mainPanel?: SettingsUi;
+  override onActivate(context: ex.SceneActivationContext): void { super.onActivate(context); this.mainPanel = new SettingsUi(); this.add(this.mainPanel); }
+  override onDeactivate(context: ex.SceneActivationContext): void { super.onDeactivate(context); this.mainPanel?.kill(); this.mainPanel = undefined; }
 }

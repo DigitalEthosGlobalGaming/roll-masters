@@ -1,4 +1,4 @@
-import { Building } from "@src/building";
+import { ChessPiece } from "./chess-piece";
 import { Dice } from "@src/buildings/dice";
 import { GridSpace } from "@src/grid-system/grid-space";
 import { Resources } from "@src/resources";
@@ -6,7 +6,7 @@ import { random } from "@src/utility/random";
 import * as ex from "excalibur";
 
 
-export class Bishop extends Building {
+export class Bishop extends ChessPiece {
   static serializeName: string = "Bishop";
   spaces: GridSpace[] = [];
   tickRate: number = 1000;
@@ -14,7 +14,7 @@ export class Bishop extends Building {
   bounds: ex.Vector = ex.vec(1, 1);
 
   constructor() {
-    super();
+    super("bishop");
     this.spriteImage = Resources.ChessBishop;
   }
 
@@ -28,6 +28,7 @@ export class Bishop extends Building {
 
   onTick(_delta: number): void {
     super.onTick(_delta);
+    this.playActivation();
     let maxSize = Math.max(this.bounds.x, this.bounds.y);
     if (this.currentRange > maxSize) {
       this.currentRange = 1;

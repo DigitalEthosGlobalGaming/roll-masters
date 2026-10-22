@@ -65,8 +65,8 @@ export class Building extends ex.Actor implements Serializable {
     const sprite = ex.Sprite.from(value);
     
     const aspectRatio = value.width / value.height;
-    const maxWidth = 24;
-    const maxHeight = 24;
+    const maxWidth = 28;
+    const maxHeight = 28;
     
     let width = maxWidth;
     let height = maxHeight;

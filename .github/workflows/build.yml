@@ -25,6 +25,16 @@ jobs:
         with:
           submodules: recursive
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install and lint
+        run: |
+          npm ci
+          npm run lint
+
       - name: Set Build Version
         run: echo "BUILD_VERSION=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
 
@@ -43,14 +53,12 @@ jobs:
 
       - name: Build Roll Masters - Versioned
         run: |
-          npm ci
           VITE_BUILD_VERSION=$BUILD_VERSION npm run build -- --base=roll-masters/v-$BUILD_VERSION
           mkdir -p dist-history/v-$BUILD_VERSION
           cp -r dist/* dist-history/v-$BUILD_VERSION
 
       - name: Build Roll Masters - Latest
         run: |
-          npm ci
           VITE_BUILD_VERSION=$BUILD_VERSION npm run build -- --base=roll-masters
 
       - name: Copy to versioned subfolder

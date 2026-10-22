@@ -56,6 +56,7 @@ class GridSpaceGhost extends ex.Actor {
 }
 
 export class DiceGameGridSystem extends GridSystem implements InputHandler {
+  acceptingInputs: "MouseLeft"[] = ["MouseLeft"];
   private _highlightedSpace: GridSpace | null = null;
   showGhost = false;
 
@@ -101,7 +102,7 @@ export class DiceGameGridSystem extends GridSystem implements InputHandler {
     this.highlightedSpace = null;
   }
 
-  onPointerUp(evt: ExtendedPointerEvent): void {
+  onPointerPressed(evt: ExtendedPointerEvent): void {
     let space = this.getSpaceFromWorldPosition(evt.worldPos);
     if (space != null) {
       this.player?.onSpaceClicked(space);
@@ -137,7 +138,7 @@ export class DiceGameGridSystem extends GridSystem implements InputHandler {
         columns: this.size.y,
         cellWidth: this.spaceSize.x,
         cellHeight: this.spaceSize.y,
-        color: ex.Color.Black,
+        color: ex.Color.fromHex("#172622"),
         thickness: 1,
       })
     );

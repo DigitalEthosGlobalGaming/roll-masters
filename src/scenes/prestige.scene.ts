@@ -1,61 +1,26 @@
 import { Level } from "@src/level";
 import { Button } from "@src/ui/elements/button";
 import { Label } from "@src/ui/elements/label";
-import { List } from "@src/ui/elements/list";
-import { Panel } from "@src/ui/panel";
+import { ScreenPanel } from "@src/ui/screen-panel";
 import * as ex from "excalibur";
+import { GameScene } from "./game.scene";
+import { formatGold } from "@src/ui/game-presentation";
 
-const elements = [
-  {
-    text: "CONGRATULATIONS",
-    size: 40,
-  },
-  {
-    text: "Your efforts as rollmaster has been noticed",
-    size: 24,
-  },
-  {
-    text: "Keep playing to unlock upgrades!",
-    size: 24,
-  },
-];
-
-class Ui extends Panel {
-  onRender(): void {
-    super.onRender();
-    this.size = this.screenSize.scale(0.9);
-    this.pos = this.screenSize.scale(0.5);
-
-    const list = this.addPanel("list", List);
-    list.spacing = 30;
-
-    for (const elementIndex in elements) {
-      const label = list.addPanel(elementIndex, Label);
-      let element = elements[elementIndex];
-      label.fontSize = element.size;
-      label.text = element.text;
+class PrestigeResult extends ScreenPanel {
+  override onSetup(): void {
+    const game = this.scene?.engine.scenes["GameScene"] as GameScene | undefined;
+    const result = game?.lastPrestige;
+    const title = this.content.addPanel("title", Label); title.text = "A new reign begins"; title.fontSize = 34;
+    const summary = this.content.addPanel("summary", Label);
+    summary.text = result ? "+" + result.points + " prestige points\n" + formatGold(result.balance) + " points available\nNext run: " + formatGold(result.gold) + " gold" : "Your permanent upgrades carry into the next run.";
+    for (const [key, text, spend] of [["spend", "Spend points", true], ["return", "Return to board", false]] as const) {
+      const button = this.content.addPanel(key, Button); button.text = text;
+      button.onClick = () => { if (game) game.openPrestigeOnLoad = spend; this.scene?.engine.goToScene("GameScene"); };
     }
-
-    const button = list.addPanel("back-button", Button);
-    button.text = "Back";
-    button.fontSize = 16;
-    button.onClick = () => {
-      this.scene?.engine.goToScene("GameScene");
-    };
   }
 }
-
 export class PrestigeScene extends Level {
-  mainPanel!: Ui;
-  onActivate(context: ex.SceneActivationContext): void {
-    super.onActivate(context);
-    this.mainPanel = new Ui();
-    this.add(this.mainPanel);
-  }
-
-  onDeactivate(context: ex.SceneActivationContext): void {
-    super.onDeactivate(context);
-    this.mainPanel?.kill();
-    this.remove(this.mainPanel);
-  }
+  private mainPanel?: PrestigeResult;
+  override onActivate(context: ex.SceneActivationContext): void { super.onActivate(context); this.mainPanel = new PrestigeResult(); this.add(this.mainPanel); }
+  override onDeactivate(context: ex.SceneActivationContext): void { super.onDeactivate(context); this.mainPanel?.kill(); this.mainPanel = undefined; }
 }

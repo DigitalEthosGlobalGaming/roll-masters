@@ -1,8 +1,7 @@
 import * as ex from "excalibur";
 import { Level } from "@src/level";
-import { Panel } from "@src/ui/panel";
+import { ScreenPanel } from "@src/ui/screen-panel";
 import { Label } from "@src/ui/elements/label";
-import { List } from "@src/ui/elements/list";
 import { Button } from "@src/ui/elements/button";
 
 const creditElements: any[] = [
@@ -16,20 +15,17 @@ const creditElements: any[] = [
   " ",
 ];
 
-class CreditUi extends Panel {
-  onRender(): void {
-    super.onRender();
-    this.size = this.screenSize.scale(0.9);
-    this.pos = this.screenSize.scale(0.5);
+class CreditUi extends ScreenPanel {
+  onSetup(): void {
 
-    const list = this.addPanel("list", List);
+    const list = this.content;
     for (const element of creditElements) {
       const label = list.addPanel(element, Label);
       label.fontSize = 30;
       label.text = element;
     }
 
-    const button = list.addPanel("back", Button);
+    const button = this.addPanel("back", Button);
     button.text = "Back";
     button.fontSize = 20;
     button.onClick = () => {

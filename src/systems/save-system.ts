@@ -95,11 +95,7 @@ function addChild(
       if (parent == child) {
         return;
       }
-      try {
-        parent.addChild(child);
-      } catch (e) {
-        throw e;
-      }
+      parent.addChild(child);
     }
     if (child instanceof Component) {
       parent.addComponent(child);
@@ -323,7 +319,7 @@ export class SaveSystem extends System {
       if (isString(data)) {
         try {
           saveData = JSON.parse(data);
-        } catch (e) {
+        } catch {
           throw new Error("Invalid save data, could not parse json.");
         }
       }

@@ -1,5 +1,6 @@
 import { SoundKey, SoundPaths, Sounds } from "@src/resources";
 import { random } from "@src/utility/random";
+import { Environment, Settings } from "@src/env";
 import * as ex from "excalibur";
 export class SoundManager {
   static _instance: SoundManager | null = null;
@@ -36,6 +37,7 @@ export class SoundManager {
     }
   }
   play(sound: ex.Sound | keyof typeof Sounds) {
+    if (Environment.get("sound") === Settings.sound.Off) return;
     if (typeof sound === "string") {
       if (Sounds[sound] != null) {
         sound = Sounds[sound];
@@ -53,6 +55,10 @@ export class SoundManager {
     "Soundtrack5",
   ];
   lastPlayedMusic: ex.Sound | null = null;
+
+  applySettings(): void {
+    if (this.lastPlayedMusic) this.lastPlayedMusic.volume = Environment.get("sound") === Settings.sound.all ? 1 : 0;
+  }
 
   tick() {}
 
@@ -75,6 +81,7 @@ export class SoundManager {
       return;
     }
     this.lastPlayedMusic = sound;
+    this.applySettings();
     sound.once("playbackend", () => {
       this.playBackgroundMusic();
     });

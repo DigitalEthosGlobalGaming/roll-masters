@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create Game Assets"
+  short_description: "Delegate medieval sprites and import generated atlases"
+  default_prompt: "Use $create-game-assets to plan, delegate, and import original dark medieval pixel-art assets for Roll Masters without inspecting existing game images."

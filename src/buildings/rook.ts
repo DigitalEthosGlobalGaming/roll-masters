@@ -1,16 +1,17 @@
-import { Building } from "@src/building";
+import type { Building } from "@src/building";
+import { ChessPiece } from "./chess-piece";
 import { Resources } from "@src/resources";
 import { random } from "@src/utility/random";
 import * as ex from "excalibur";
 import { Dice } from "./dice";
 
 
-export class Rook extends Building {
+export class Rook extends ChessPiece {
   static serializeName: string = "Rook";
   tickRate: number = random.integer(450, 550);
 
   constructor() {
-    super();
+    super("rook");
     this.spriteImage = Resources.ChessRook;
   }
 
@@ -61,9 +62,14 @@ export class Rook extends Building {
     }
     const multiplier = (this.player.getUpgrade("Rook")?.value ?? 1);
     this.moveTo(freeSpace.newPos);
-    for (let building of freeSpace.buildings) {
+    for (const [index, building] of freeSpace.buildings.entries()) {
       if (building instanceof Dice) {
-        building.multiplier = building.multiplier + multiplier;
+        const parent = building.parent;
+        this.whenMovementPasses((index + 1) / (freeSpace.buildings.length + 1), () => {
+          if (building.parent === parent && building.scene === this.scene && !building.isKilled()) {
+            building.multiplier += multiplier;
+          }
+        });
       }
     }
     this.nextTick = random.integer(900, 1100);

@@ -64,7 +64,7 @@ export class GridSystem extends ex.Actor implements Serializable {
     this._size = size.clone();
 
     let oldSpaces = this._spaces;
-    let newSpaces: (GridSpace | null)[] = new Array(size.x * size.y).fill(null);
+    let newSpaces: (GridSpace | null)[] = Array.from({ length: size.x * size.y }, () => null);
 
     for (let i in oldSpaces) {
       let iIndex: number = parseInt(i);

@@ -1,10 +1,10 @@
-import { defineConfig } from 'vite';
-import path from 'path';
+import { defineConfig } from "vite";
+import { fileURLToPath } from "node:url";
 
 export default defineConfig({
     resolve: {
         alias: {
-            '@src': path.resolve(__dirname, './src'),
+            "@src": fileURLToPath(new URL("./src", import.meta.url)),
         },
     },
 });

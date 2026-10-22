@@ -116,6 +116,19 @@ addUpdate(
 );
 
 const showAfter = "2025-01-24";
+addUpdate("2026-10-22", "Fixes", "Button text now draws above button backgrounds, including the main menu.");
+addUpdate("2026-10-22", "Features", "B3 green-and-brass buttons now have square normal, hover, pressed and disabled skins.");
+addUpdate("2026-10-22", "Fixes", "Button frames now resize with nine-slice tiles, preserving corner details on longer controls.");
+addUpdate("2026-10-21", "Features", [
+  "Rebuilt the HUD with separate board tools, Research, Prestige and game menus.",
+  "Added a mobile Build picker, readable upgrade cards and clear prestige confirmation.",
+  "Added in-game Help, larger text, reduced motion and audio settings.",
+]);
+addUpdate("2026-10-21", "Fixes", "Spending gold no longer reduces earned prestige progress. Gold is awarded before visual feedback completes.");
+
+addUpdate("2026-10-22", "Features", "Settings now show every choice, with clearer descriptions, mobile layouts, and controls that save immediately.");
+
+addUpdate("2026-10-22", "Features", "Buttons now have crisp drawn gold frames, green faces, and a gentle press response that respects reduced motion.");
 
 export const gameUpdates = Object.values(updates)
   .filter((item) => item.date >= showAfter)

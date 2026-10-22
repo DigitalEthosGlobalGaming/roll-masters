@@ -155,7 +155,7 @@ export class Upgrade {
 
   onBuy() { }
   buy() {
-    if (this.isMaxLevel) {
+    if (this.isMaxLevel || !this.canResearch) {
       return false;
     }
 
@@ -188,5 +188,6 @@ export class Upgrade {
     this._value = Math.floor(value);
     this._nextCost = Math.floor(nextCost);
     this._nextValue = Math.floor(nextValue);
+    this._player?.playerUi?.refreshUpgrades();
   }
 }

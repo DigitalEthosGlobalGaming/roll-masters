@@ -82,14 +82,13 @@ export class TestUserInterfaceScene extends Level {
 
   onActivate(context: ex.SceneActivationContext): void {
     super.onActivate(context);
-    this.add(new Controller());
+    if (!this.entities.some(entity => entity instanceof Controller)) this.add(new Controller());
     this.startTest();
   }
 
   onDeactivate(context: ex.SceneActivationContext): void {
     super.onDeactivate(context);
-    for (let entity of this.entities) {
-      entity.kill();
-    }
+    this.currentTestPanel?.kill();
+    this.currentTestPanel = undefined;
   }
 }

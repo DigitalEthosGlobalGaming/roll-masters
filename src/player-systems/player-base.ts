@@ -20,6 +20,7 @@ import {
   PlayerActionTypes,
 } from "./player-actions";
 import { Tooltip } from "./player-tooltip";
+import { clampCameraZoom, zoomAnchorOffset } from "./camera-controls";
 
 type MouseState = {
   button: number;
@@ -66,6 +67,8 @@ export class PlayerBase extends ex.Actor implements InputHandler {
   }
 
   cameraMovementData: CameraMovementData | null = null;
+  private pinchDistance = 0;
+  private pinchCenter: ex.Vector | null = null;
   wishPosition = ex.vec(0, 0);
   isSetup = false;
 
@@ -84,6 +87,7 @@ export class PlayerBase extends ex.Actor implements InputHandler {
     this._currentAction = value;
     this.clearTooltips();
     this.playerUi.dirty = true;
+    this.scene?.emit("ui-state-changed");
     let relatedAction = getPlayerActions().find((a) => a.code == value);
     if (relatedAction != null) {
       this.showTooltip({
@@ -164,12 +168,12 @@ export class PlayerBase extends ex.Actor implements InputHandler {
 
     if (this.playerUi == null) {
       this.playerUi = new PlayerUi();
-      this.addChild(this.playerUi);
+      this.scene!.add(this.playerUi);
     }
     if (this.scoreComponent == null) {
       this.scoreComponent = new ScoreComponent();
       this.addComponent(this.scoreComponent);
-      this.scoreComponent.score = this.score;
+      this.scoreComponent.score = this._score;
     }
     if (this.playerUpgradesComponent == null) {
       this.playerUpgradesComponent = new PlayerUpgradesComponent();
@@ -184,6 +188,10 @@ export class PlayerBase extends ex.Actor implements InputHandler {
     }));
     this.subscriptions.push(this.scene?.on("im-pointer-up", (e) => {
       this.onPointerUp(e as ExtendedPointerEvent);
+    }));
+    this.subscriptions.push(this.scene.on("im-wheel", (event) => {
+      const e = event as { delta: number; screenPos: ex.Vector };
+      this.setCameraZoom(this.getCamera().zoom * Math.exp(-Math.max(-200, Math.min(200, e.delta)) * 0.002), e.screenPos);
     }));
     const timer = this.scene?.addTimer(
       new ex.Timer({
@@ -205,7 +213,19 @@ export class PlayerBase extends ex.Actor implements InputHandler {
   }
 
   onPointerMove(e: ExtendedPointerEvent) {
-    const isPrimary = e.isDown("MouseLeft") || e.pointerType == "Touch";
+    const pointers = this.inputSystem?.boardPointers ?? [];
+    if (pointers.length > 1) {
+      const center = pointers[0].add(pointers[1]).scale(0.5);
+      const distance = pointers[0].distance(pointers[1]);
+      if (this.pinchCenter && this.pinchDistance > 0 && distance > 0) {
+        this.wishPosition = this.wishPosition.sub(center.sub(this.pinchCenter).scale(1 / this.getCamera().zoom));
+        this.setCameraZoom(this.getCamera().zoom * distance / this.pinchDistance, center);
+      }
+      this.pinchCenter = center;
+      this.pinchDistance = distance;
+      return;
+    }
+    const isPrimary = e.isDown("MouseLeft") && this.inputSystem?.isDragging;
 
     if (isPrimary) {
       if (this.inputSystem?.isDown(ex.Keys.ShiftLeft)) {
@@ -221,29 +241,65 @@ export class PlayerBase extends ex.Actor implements InputHandler {
             lastPos: e.screenPos.clone(),
           };
         } else {
+          this.cameraMovementData.isMoving = true;
           this.cameraMovementData.pos = e.screenPos.clone();
 
           let diff = this.cameraMovementData.pos.sub(
             this.cameraMovementData.lastPos
           );
-          this.wishPosition = this.wishPosition.sub(diff);
+          this.wishPosition = this.wishPosition.sub(diff.scale(1 / this.getCamera().zoom));
 
           this.cameraMovementData.lastPos = e.screenPos.clone();
         }
       }
-    } else {
+    } else if (!e.isDown("MouseLeft")) {
       this.cameraMovementData = null;
     }
   }
 
-  onPointerDown(_e: ExtendedPointerEvent) { }
+  onPointerDown(e: ExtendedPointerEvent) {
+    this.cameraMovementData = { isMoving: false, pos: e.screenPos.clone(), lastPos: e.screenPos.clone() };
+    const pointers = this.inputSystem?.boardPointers ?? [];
+    if (pointers.length > 1) {
+      this.pinchCenter = pointers[0].add(pointers[1]).scale(0.5);
+      this.pinchDistance = pointers[0].distance(pointers[1]);
+    }
+  }
 
   onPointerUp(_e: ExtendedPointerEvent) {
     this.cameraMovementData = null;
+    this.pinchCenter = null;
+    this.pinchDistance = 0;
+    const remaining = this.inputSystem?.boardPointers[0];
+    if (remaining) this.cameraMovementData = { isMoving: true, pos: remaining.clone(), lastPos: remaining.clone() };
+  }
+
+  setCameraZoom(value: number, anchor?: ex.Vector): void {
+    const camera = this.getCamera();
+    const zoom = clampCameraZoom(value);
+    const { width, height } = this.getEngine().screen.resolution;
+    if (anchor) this.wishPosition = this.wishPosition.add(ex.vec(
+      zoomAnchorOffset(anchor.x - width / 2, camera.zoom, zoom),
+      zoomAnchorOffset(anchor.y - height / 2, camera.zoom, zoom)
+    ));
+    camera.zoom = zoom;
+    this.playerUi?.onViewportChanged();
+  }
+
+  resetCamera(): void {
+    this.setCameraZoom(1);
+    this.wishPosition = this.getGridSystem()?.getBounds().center.clone() ?? ex.vec(0, 0);
   }
 
   onSpaceClicked(space: GridSpace) {
-    if (this.cameraMovementData == null) {
+    if (!this.cameraMovementData?.isMoving) {
+      if (this.currentAction === "NONE") {
+        const building = space.children.find(item => item instanceof Building);
+        building?.trigger();
+        if (building?.tooltip) this.showTooltip({ code: "building-tooltip", title: building.friendlyName, description: building.tooltip });
+        this.getScene().save();
+        return;
+      }
       let currentAction = getPlayerActions().find(
         (a) => a.code == this.currentAction
       );
@@ -316,6 +372,7 @@ export class PlayerBase extends ex.Actor implements InputHandler {
       const action = getPlayerActions().find((a) => a.code == this.currentAction);
       let cost = 0;
       if (action?.type == PlayerActionTypes.BUILDABLE) {
+        if (!action.unlocked) return;
         cost = action.building.cost();
 
         if (this.spendEnergy(cost)) {
@@ -334,6 +391,8 @@ export class PlayerBase extends ex.Actor implements InputHandler {
               building.build();
             }
           }
+        } else {
+          this.playerUi.notify("Not enough gold. Need " + cost.toLocaleString("en") + " gold.");
         }
       }
     } else {
@@ -358,7 +417,7 @@ export class PlayerBase extends ex.Actor implements InputHandler {
         title: relatedAction.name,
         description: relatedAction.tooltip,
       };
-    }
+    } else ui.tooltip = null;
   }
 
   clearTooltips() {
@@ -458,7 +517,11 @@ export class PlayerBase extends ex.Actor implements InputHandler {
     if (this.data == null) {
       this.data = {};
     }
+    const previous = this.data[key];
     this.data[key] = data;
+    if (previous !== data && key !== "lifetime-energy") this.scene?.emit("ui-state-changed");
+    if (key === "current-prestige-score" && Math.floor((previous ?? 0) / 1000000) !== Math.floor((data ?? 0) / 1000000)) this.playerUi?.refreshUpgrades();
+    if (key === "prestige-points" && previous !== data) this.playerUi?.refreshUpgrades();
   }
   getData(key: string) {
     return this.data[key];
@@ -475,7 +538,7 @@ export class PlayerBase extends ex.Actor implements InputHandler {
     playerAction.unlocked = true;
     this.setData(`actions.${action}`, true);
     if (this.playerUi != null) {
-      this.playerUi.allDirty = true;
+      this.playerUi.playerActionsUi?.invalidate();
     }
   }
   unlockResearch(research: keyof typeof upgrades) {
@@ -488,12 +551,13 @@ export class PlayerBase extends ex.Actor implements InputHandler {
 
     this.setData(`research.${research}`, true);
     if (this.playerUi != null) {
-      this.playerUi.allDirty = true;
+      this.playerUi.refreshUpgrades();
     }
   }
 
   onPreKill(scene: ex.Scene): void {
     super.onPreKill(scene);
+    this.playerUi?.kill();
     this.subscriptions.forEach((s) => s.close());
     this.subscriptions = [];
   }

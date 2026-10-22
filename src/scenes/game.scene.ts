@@ -6,6 +6,16 @@ import { Player } from "@src/player-systems/player";
 import { Serializable } from "@src/systems/save-system";
 import { NotificationSystem } from "@src/systems/notification.system";
 import * as ex from "excalibur";
+import { prestigeReward } from "@src/ui/game-presentation";
+import { getPlayerActions } from "@src/player-systems/player-actions";
+
+const boardColors = {
+  shadow: ex.Color.fromHex("#0b0d0e"),
+  frame: ex.Color.fromHex("#362e26"),
+  rim: ex.Color.fromHex("#86704b"),
+  inset: ex.Color.fromHex("#111c19"),
+  alternate: ex.Color.fromHex("#253c34"),
+};
 
 export class GameScene extends Level implements Serializable {
   static serializeName = "GameScene";
@@ -15,11 +25,13 @@ export class GameScene extends Level implements Serializable {
   }
 
   previouslyLoaded: boolean = false;
+  openPrestigeOnLoad = false;
+  lastPrestige?: { points: number; balance: number; gold: number };
   score: number = 0;
   best: number = 0;
   random = new ex.Random();
   gridSystem: DiceGameGridSystem | null = null;
-  gridColor = new ex.Color(255 * 0, 255 * 0.1, 255 * 0.1, 1);
+  gridColor = ex.Color.fromHex("#20352e");
   saveSystem!: DiceSaveSystem;
   notificationSystem!: NotificationSystem;
   autosaveTimer: ex.Timer | null = null;
@@ -119,6 +131,10 @@ export class GameScene extends Level implements Serializable {
         this.resizeGrid();
 
         this.inputSystem.paused = false;
+        if (this.openPrestigeOnLoad) {
+          this.openPrestigeOnLoad = false;
+          this.player?.playerUi.openUpgrades("prestige-ui");
+        }
       },
       interval: 250,
     });
@@ -140,14 +156,15 @@ export class GameScene extends Level implements Serializable {
 
   onKeyUp(evt: ExtendedKeyEvent) {
     if (evt.key == ex.Keys.Escape) {
-      this.save();
-      this.engine.goToScene("WelcomeScene");
+      if (this.player?.currentAction !== "NONE" && this.player) this.player.currentAction = "NONE";
+      else this.player?.playerUi.openMenu();
     }
   }
 
   deserialize(_data: any): void { }
 
   onPreDraw(ctx: ex.ExcaliburGraphicsContext, elapsed: number): void {
+    super.onPreDraw(ctx, elapsed);
     const gridBounds = this.gridSystem?.getBounds();
     if (gridBounds == null) {
       return;
@@ -156,15 +173,46 @@ export class GameScene extends Level implements Serializable {
     const width = gridBounds?.width;
     const height = gridBounds?.height;
 
-    const cameraTopLeft = this.camera.viewport.topLeft;
+    const screenPosition = this.engine.worldToScreenCoordinates(position);
+    const zoom = this.camera.zoom;
+    const boardWidth = width * zoom;
+    const boardHeight = height * zoom;
+
+    // Draw the tabletop in the same screen space as the board so its frame
+    // follows camera movement and zoom without changing placement bounds.
+    const surround = (padding: number, color: ex.Color, offset = 0) => {
+      ctx.drawRectangle(
+        screenPosition.add(ex.vec((offset - padding) * zoom, (offset - padding) * zoom)),
+        boardWidth + padding * 2 * zoom,
+        boardHeight + padding * 2 * zoom,
+        color
+      );
+    };
+    surround(13, boardColors.shadow, 5);
+    surround(11, boardColors.rim);
+    surround(10, boardColors.frame);
+    surround(3, boardColors.rim);
+    surround(2, boardColors.inset);
 
     ctx.drawRectangle(
-      position.clone().sub(cameraTopLeft),
-      width,
-      height,
+      screenPosition,
+      boardWidth,
+      boardHeight,
       this.gridColor
     );
-    super.onPreDraw(ctx, elapsed);
+    const grid = this.gridSystem!;
+    const cellWidth = grid.spaceSize.x * zoom;
+    const cellHeight = grid.spaceSize.y * zoom;
+    for (let row = 0; row < grid.size.y; row++) {
+      for (let col = row % 2; col < grid.size.x; col += 2) {
+        ctx.drawRectangle(
+          screenPosition.add(ex.vec(col * cellWidth, row * cellHeight)),
+          cellWidth,
+          cellHeight,
+          boardColors.alternate
+        );
+      }
+    }
   }
 
   prestige() {
@@ -172,15 +220,16 @@ export class GameScene extends Level implements Serializable {
     if (player == null) {
       throw new Error("Player is not defined");
     }
-    let prestigePoints = Math.floor(
-      player.currentPrestigeScore / 1000000
-    );
+    const prestigePoints = prestigeReward(player.currentPrestigeScore);
+    if (prestigePoints < 1) return;
     player.currentPrestigeScore = 0;
     player.prestigePoints =
       Math.floor(player.prestigePoints + prestigePoints);
 
     player.totalPrestiges = Math.floor(player.totalPrestiges + 1);
     player.score = player.totalPrestiges * 100 + 10;
+    this.lastPrestige = { points: prestigePoints, balance: player.prestigePoints, gold: player.score };
+    for (const action of getPlayerActions()) action.unlocked = ["NEWDICE", "REMOVE", "UPGRADES"].includes(action.code);
     for (const i in player.data) {
       if (i.startsWith("actions.")) {
         player.data[i] = false;

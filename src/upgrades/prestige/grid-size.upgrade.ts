@@ -7,8 +7,7 @@ export class GridSizeUpgrade extends Upgrade {
   type: UpgradeType = "PRESTIGE";
   get description(): string {
     const parts = [
-      `{nextCost}⏣ - Increases playing space to {${this.nextValue + 16}} x {${this.nextValue + 16
-      }}`,
+      `Board: ${this.value + 16} × ${this.value + 16} → ${this.nextValue + 16} × ${this.nextValue + 16}`,
     ];
 
     return parts.join("\n");

@@ -8,8 +8,7 @@ export class BetterPassiveEnergyUpgrade extends Upgrade {
 
   get description(): string {
     const parts = [
-      `Passive gold increased by ${this.value}%`,
-      `{nextCost}⏣ - Increases the amount of passive income by ${this.nextValue}%`,
+      `Passive gold bonus: ${this.value}% → ${this.nextValue}%`,
     ];
 
     return parts.join("\n");

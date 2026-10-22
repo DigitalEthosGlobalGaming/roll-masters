@@ -3,14 +3,15 @@ import { Dice } from "@src/buildings/dice";
 import { GridSpace } from "@src/grid-system/grid-space";
 import { Resources } from "@src/resources";
 import { random } from "@src/utility/random";
+import { ChessPiece } from "./chess-piece";
 
 
-export class WanderingKnight extends Building {
+export class WanderingKnight extends ChessPiece {
   static serializeName: string = "WanderingKnight";
   tickRate: number = random.integer(450, 550);
 
   constructor() {
-    super();
+    super("knight");
     this.spriteImage = Resources.ChessKnight;
   }
 
@@ -60,12 +61,14 @@ export class WanderingKnight extends Building {
     super.moveTo(space);
     const diceToBonus = this.neighboringDice;
     for (let dice of diceToBonus) {
-      if (dice.rolling != true) {
-        let value =
-          (this.player.getUpgrade("WanderingKnight")?.value ?? 1) / 10;
-        value = Math.floor(value * 10) / 10;
-        dice.multiplier += value;
-      }
+      const parent = dice.parent;
+      let value = (this.player.getUpgrade("WanderingKnight")?.value ?? 1) / 10;
+      value = Math.floor(value * 10) / 10;
+      this.whenMovementPasses(1, () => {
+        if (dice.parent === parent && dice.scene === this.scene && !dice.isKilled() && !dice.rolling) {
+          dice.multiplier += value;
+        }
+      });
     }
     this.tickRate = random.integer(450, 550);
   }

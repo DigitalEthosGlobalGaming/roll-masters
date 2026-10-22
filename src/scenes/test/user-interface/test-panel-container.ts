@@ -1,26 +1,8 @@
 import * as ex from "excalibur";
 import { Panel, PanelBackgrounds } from "@src/ui/panel";
-
 export class TestPanelContainer extends Panel {
-    margin: ex.Vector = ex.vec(0, 0);
-    isSetup: boolean = false;
-    onAdd(engine: ex.Engine): void {
-        super.onAdd(engine);
-        this.background = PanelBackgrounds.Panel;
-    }
-
-    calculateSize(): void {
-        const size = this.screenSize;
-        this.margin = size.scale(0.05);
-        this.size = size.scale(0.9);
-    }
-
-    setup() {
-
-    }
-    onRender(): void {
-        super.onRender();
-        this.topLeft = this.margin;
-        this.setup();
-    }
+  margin = ex.vec(0, 0);
+  setup(): void { }
+  override onSetup(): void { this.background = PanelBackgrounds.Panel; this.setup(); }
+  override onViewportChanged(): void { this.margin = this.screenSize.scale(0.05); this.size = this.screenSize.scale(0.9); this.topLeft = this.margin; this.invalidateLayout(); }
 }

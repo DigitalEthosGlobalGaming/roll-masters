@@ -1,4 +1,5 @@
 import * as ex from "excalibur";
+import { fitNineSlice, getNineSliceCenter, nineSliceCenterColors, nineSliceSources } from "./ui/nine-slice-config";
 
 export const Resources = {
   // Relative to /public in vite
@@ -7,8 +8,8 @@ export const Resources = {
   Token: new ex.ImageSource("./images/board-game-icons/token.png"),
   Tokens: new ex.ImageSource("./images/board-game-icons/token.png"),
   TokensStack: new ex.ImageSource("./images/board-game-icons/tokens_stack.png"),
-  DiceEmpty: new ex.ImageSource("./images/board-game-icons/dice_empty.png"),
-  Dollar: new ex.ImageSource("./images/board-game-icons/dollar.png"),
+  DiceEmpty: new ex.ImageSource("./images/medieval/dice_empty.png"),
+  Dollar: new ex.ImageSource("./images/medieval/dollar.png"),
   Dice1: new ex.ImageSource("./images/medieval/dice_1.png"),
   Dice2: new ex.ImageSource("./images/medieval/dice_2.png"),
   Dice3: new ex.ImageSource("./images/medieval/dice_3.png"),
@@ -16,7 +17,7 @@ export const Resources = {
   Dice5: new ex.ImageSource("./images/medieval/dice_5.png"),
   Dice6: new ex.ImageSource("./images/medieval/dice_6.png"),
   HandCube: new ex.ImageSource("./images/board-game-icons/hand_cube.png"),
-  DiceOut: new ex.ImageSource("./images/board-game-icons/dice_out.png"),
+  DiceOut: new ex.ImageSource("./images/medieval/dice_out.png"),
   Pouch: new ex.ImageSource("./images/board-game-icons/pouch.png"),
   ChessQueen: new ex.ImageSource("./images/medieval/chess_queen.png"),
   ChessKing: new ex.ImageSource("./images/medieval/chess_king.png"),
@@ -25,24 +26,24 @@ export const Resources = {
   ChessBishop: new ex.ImageSource("./images/medieval/chess_bishop.png"),
   ChessPawn: new ex.ImageSource("./images/medieval/chess_pawn.png"),
   SuitDiamonds: new ex.ImageSource(
-    "./images/board-game-icons/suit_diamonds.png"
+    "./images/medieval/suit_diamonds.png"
   ),
   SuitHearts: new ex.ImageSource("./images/board-game-icons/suit_hearts.png"),
   SuitSpades: new ex.ImageSource("./images/board-game-icons/suit_spades.png"),
   SuitClubs: new ex.ImageSource("./images/board-game-icons/suit_clubs.png"),
-  DiceSkull: new ex.ImageSource("./images/board-game-icons/dice_skull.png"),
+  DiceSkull: new ex.ImageSource("./images/medieval/dice_skull.png"),
   CardTarget: new ex.ImageSource("./images/board-game-icons/card_target.png"),
 
-  FlaskFull: new ex.ImageSource("./images/board-game-icons/flask_full.png"),
+  FlaskFull: new ex.ImageSource("./images/medieval/flask_full.png"),
 
   // Cursors
   ResizeDCrossDiagonal: new ex.ImageSource(
-    "./images/cursors/basic/double/resize_d_cross_diagonal.png"
+    "./images/medieval/resize_d_cross_diagonal.png"
   ),
 
   // UI Images
-  UiPanel: new ex.ImageSource("./images/ui/panel.png"),
-  UiButton: new ex.ImageSource("./images/ui/button.png"),
+  UiPanel: new ex.ImageSource("./images/ui/medieval_panel.png"),
+  UiButton: new ex.ImageSource("./images/ui/medieval_button.png"),
 } as const;
 
 export const SoundPaths = {
@@ -73,25 +74,11 @@ export type SoundKey = keyof typeof SoundPaths;
 const UiNineSlices = {
   Button: {
     source: Resources.UiButton,
-    sourceConfig: {
-      width: 1024,
-      height: 1024,
-      topMargin: 0,
-      leftMargin: 0,
-      bottomMargin: 0,
-      rightMargin: 0,
-    },
+    sourceConfig: nineSliceSources.Button,
   },
   Panel: {
     source: Resources.UiPanel,
-    sourceConfig: {
-      width: 1024,
-      height: 1024,
-      topMargin: 0,
-      leftMargin: 0,
-      bottomMargin: 0,
-      rightMargin: 0,
-    },
+    sourceConfig: nineSliceSources.Panel,
   },
 };
 
@@ -106,11 +93,16 @@ export type NinesliceResourceOptions = {
 
 export function getNineslice(config: NinesliceResourceOptions) {
   const { source, sourceConfig } = UiNineSlices[config.name];
+  const target = fitNineSlice(config.width, config.height, sourceConfig);
   const nineSliceConfig = {
-    sourceConfig: sourceConfig,
+    // NineSlice.setMargins() mutates this config; keep each widget independent.
+    sourceConfig: { ...sourceConfig },
     source: source,
-    width: config.width,
-    height: config.height,
+    width: target.width,
+    height: target.height,
+    // Anchor any tiny-control compression at the caller's top-left position.
+    origin: ex.vec(0, 0),
+    scale: ex.vec(target.scaleX, target.scaleY),
     destinationConfig: {
       drawCenter: config.drawCenter ?? true,
       horizontalStretch:
@@ -120,4 +112,27 @@ export function getNineslice(config: NinesliceResourceOptions) {
   };
 
   return new ex.NineSlice(nineSliceConfig);
+}
+
+/** Render the generated frame over a solid center without filling its transparent corners. */
+export function getUiBackground(config: NinesliceResourceOptions): ex.Graphic {
+  const frame = getNineslice(config);
+  if (config.drawCenter === false) return frame;
+  const center = getNineSliceCenter(config.width, config.height, nineSliceSources[config.name]);
+  return new ex.GraphicsGroup({
+    // This group is nested inside a widget group. Preserve its supplied offset;
+    // useAnchor:false is only appropriate for the outer actor-local widget group.
+    useAnchor: true,
+    members: [
+      {
+        graphic: new ex.Rectangle({
+          width: center.width,
+          height: center.height,
+          color: ex.Color.fromHex(nineSliceCenterColors[config.name]),
+        }),
+        offset: ex.vec(center.left, center.top),
+      },
+      { graphic: frame, offset: ex.vec(0, 0) },
+    ],
+  });
 }

@@ -1,65 +1,87 @@
-import { Button } from "@src/ui/elements/button";
-import { Label } from "@src/ui/elements/label";
-import { List } from "@src/ui/elements/list";
-import { Panel } from "@src/ui/panel";
 import * as ex from "excalibur";
+import { Button } from "./elements/button";
+import { Label } from "./elements/label";
+import { Panel } from "./panel";
+import { ScrollPanel } from "./scroll-panel";
 import { UpgradeListItem } from "./upgrade-list-item";
-import { UpgradesModal } from "./upgrades-modal";
-import { Environment } from "@src/env";
+import { Level } from "@src/level";
+import { formatGold } from "./game-presentation";
 
 export class UpgradeUi extends Panel {
-  onRender() {
-    if (this.player == null) {
+  onNavigate: (tab: "upgrade-ui" | "prestige-ui") => void = () => {};
+  protected title!: Label;
+  protected wallet!: Label;
+  protected scroll!: ScrollPanel;
+  protected info!: Label;
+  protected prestigeButton!: Button;
+  protected section!: Label;
+  private completed!: Button;
+  private showCompleted = false;
+  protected get player() { return this.scene instanceof Level ? this.scene.player : undefined; }
+  protected get upgradeType(): "RESEARCH" | "PRESTIGE" { return "RESEARCH"; }
+  override onSetup(): void {
+    this.title = this.addPanel("title", Label); this.title.fontSize = 30; this.title.align = "left"; this.title.color = ex.Color.fromHex("#e1c99d");
+    this.wallet = this.addPanel("wallet", Label); this.wallet.fontSize = 17; this.wallet.align = "left"; this.wallet.color = ex.Color.fromHex("#c6c3b9");
+    this.section = this.addPanel("section", Label); this.section.fontSize = 15; this.section.align = "left"; this.section.color = ex.Color.fromHex("#c9a66a");
+    this.section.text = "RESEARCH UPGRADES";
+    this.scroll = this.addPanel("rows", ScrollPanel);
+    this.info = this.scroll.content.addPanel("info", Label); this.info.fontSize = 18;
+    this.info.text = "Keep playing to unlock upgrades!";
+    this.completed = this.scroll.content.addPanel("completed", Button); this.completed.fontSize = 17;
+    this.completed.onClick = () => { this.showCompleted = !this.showCompleted; this.invalidate(); };
+    this.prestigeButton = this.addPanel("prestige", Button); this.prestigeButton.fontSize = 18;
+    this.prestigeButton.text = "Prestige";
+    this.prestigeButton.onClick = () => this.onNavigate("prestige-ui");
+  }
+  override onRefresh(): void {
+    const player = this.player;
+    if (!player) return;
+    this.title.text = "Research";
+    this.wallet.text = "Gold: " + formatGold(player.score ?? 0);
+    const upgrades = player.upgrades.filter(upgrade => upgrade.canResearch && upgrade.type === this.upgradeType);
+    const keys = new Set(upgrades.map(upgrade => upgrade.code));
+    for (const row of this.scroll.content.getChildrenPanels()) {
+      if (row instanceof UpgradeListItem && !keys.has(row.name)) this.scroll.content.removePanel(row);
+    }
+    this.info.collapsed = upgrades.length > 0;
+    const completedCount = upgrades.filter(upgrade => upgrade.isMaxLevel).length;
+    this.completed.collapsed = completedCount === 0;
+    this.completed.text = (this.showCompleted ? "Hide" : "Show") + " completed (" + completedCount + ")";
+    for (const upgrade of upgrades) {
+      const row = this.scroll.content.addPanel(upgrade.code, UpgradeListItem);
+      row.upgrade = upgrade;
+      row.collapsed = upgrade.isMaxLevel && !this.showCompleted;
+      row.onBuy = () => this.invalidate(); row.invalidate();
+    }
+    this.prestigeButton.visible = true;
+  }
+  protected get extraHeaderHeight(): number { return 0; }
+  override onLayout(): void {
+    if (this.height < 420 && this.width > 500) {
+      const summaryWidth = Math.floor(this.width * 0.36);
+      this.title.maxWidth = summaryWidth;
+      this.wallet.maxWidth = summaryWidth;
+      this.title.pos = ex.vec(-this.halfWidth + this.title.halfWidth, -this.halfHeight + this.title.halfHeight);
+      this.wallet.pos = ex.vec(-this.halfWidth + this.wallet.halfWidth, this.title.bottom + 8 + this.wallet.halfHeight);
+      this.prestigeButton.pos = ex.vec(-this.halfWidth + this.prestigeButton.halfWidth, this.halfHeight - this.prestigeButton.halfHeight);
+      this.section.collapsed = true;
+      this.scroll.size = ex.vec(this.width - summaryWidth - 16, this.height);
+      this.scroll.pos = ex.vec(-this.halfWidth + summaryWidth + 16 + this.scroll.halfWidth, -this.halfHeight + this.scroll.halfHeight);
+      this.info.maxWidth = this.scroll.width;
+      for (const row of this.scroll.content.getChildrenPanels()) if (row instanceof UpgradeListItem) row.availableWidth = this.scroll.width;
       return;
     }
-    const title = this.addPanel("title", Label);
-    title.pos = ex.vec(0, title.halfHeight + 40);
-    title.text = "Research";
-    title.fontSize = 40;
-
-    const upgrades = this.player.upgrades.filter(
-      (u) => u.canResearch && u.type == "RESEARCH"
-    );
-    if (upgrades.length == 0) {
-      const info = this.addPanel("info", Label);
-      info.fontSize = 24;
-      info.pos = ex.vec(0, title.pos.y + title.height + info.halfHeight);
-      info.text = "Keep playing to unlock upgrades!";
-    } else {
-      this.removePanel("info");
-      const list = this.addPanel("list", List);
-      list.spacing = 20;
-
-      for (const i in upgrades) {
-        const upgrade = upgrades[i];
-        if (upgrade.canResearch) {
-          const upgradePanel = list.addPanel(upgrade.code, UpgradeListItem);
-          upgradePanel.upgrade = upgrade;
-        } else {
-          list.removePanel(upgrade.code);
-        }
-      }
-      list.pos = ex.vec(
-        -this.getParentBounds().width / 2 + 20,
-        title.pos.y + title.height + list.halfHeight
-      );
-
-      if (this.player.currentPrestigeScore > 1000000 || Environment.isDev || this.player.prestigePoints > 0) {
-        let parent = this.parentPanel;
-        if (parent != null) {
-          const prestige = this.addPanel("prestige", Button);
-          prestige.text = "PRESTIGE";
-          prestige.fontSize = 20;
-          prestige.pos = ex.vec(0, parent.height - this.halfHeight - 30);
-          prestige.tooltip =
-            "Prestige to gain ⏣, earn 1 ⏣ for every 1 million gold earned.";
-          prestige.onClick = () => {
-            if (parent instanceof UpgradesModal) {
-              parent.currentTab = "prestige-ui";
-            }
-          };
-        }
-      }
-    }
+    this.title.maxWidth = this.width;
+    this.section.collapsed = false;
+    this.title.pos = ex.vec(-this.halfWidth + this.title.halfWidth, -this.halfHeight + this.title.halfHeight);
+    this.wallet.maxWidth = this.width;
+    this.wallet.pos = ex.vec(-this.halfWidth + this.wallet.halfWidth, this.title.bottom + 10 + this.wallet.halfHeight);
+    this.prestigeButton.pos = ex.vec(0, this.halfHeight - this.prestigeButton.halfHeight);
+    this.section.pos = ex.vec(-this.halfWidth + this.section.halfWidth, this.wallet.bottom + 24 + this.extraHeaderHeight + this.section.halfHeight);
+    const top = this.section.bottom + 12;
+    this.scroll.size = ex.vec(this.width, Math.max(1, this.prestigeButton.top - top - 12));
+    this.scroll.pos = ex.vec(0, top + this.scroll.halfHeight);
+    this.info.maxWidth = this.width;
+    for (const row of this.scroll.content.getChildrenPanels()) if (row instanceof UpgradeListItem) row.availableWidth = this.width;
   }
 }
