@@ -100,6 +100,7 @@ export class Roller extends ChessPiece {
   onTrigger(): void {
     super.onBuild();
     this.rollDice();
+    this.scene?.emit("tutorial-signal", "rolled:Pawn" as any);
   }
   rollDice() {
     // Preserve connected-pawn propagation without recursion or duplicate triggers.

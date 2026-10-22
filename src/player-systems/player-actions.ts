@@ -66,7 +66,7 @@ export function getPlayerActions() {
       },
       unlocked: true,
       tooltip:
-        "10\u23E2 - Will roll to generate income.\n         Click to roll once placed.",
+        "Rolls to earn gold equal to its face.\nIn Roll mode, tap it to roll again.",
     },
     {
       code: "NEWROLLER",
@@ -78,7 +78,7 @@ export function getPlayerActions() {
         cost: () => 100,
         classRef: Roller,
       },
-      tooltip: "100\u23E2 - Every 10 seconds will roll all touching dice.",
+      tooltip: "Rolls every touching die, every 10 seconds.",
     },
     {
       code: "NEWKNIGHT",
@@ -89,7 +89,7 @@ export function getPlayerActions() {
         cost: () => 1000,
         classRef: WanderingKnight,
       },
-      tooltip: "1000\u23E2 - Moves around the board, strenghtening dice.",
+      tooltip: "Wanders the board, strengthening the dice it visits.",
     },
     {
       code: "ROOK",
@@ -101,7 +101,7 @@ export function getPlayerActions() {
         classRef: Rook,
       },
       tooltip:
-        "125000 - Moves to a random space through buildings. Adding multipliers to dice passed.",
+        "Slides through pieces to a random space, adding multipliers to dice it passes.",
     },
     {
       code: "BISHOP",
@@ -113,7 +113,7 @@ export function getPlayerActions() {
         cost: () => 10000,
         classRef: Bishop,
       },
-      tooltip: "10000\u23E2 - Rolls dice in a diagonal pattern.",
+      tooltip: "Rolls dice along its diagonals.",
     },
     {
       code: "REMOVE",
@@ -125,7 +125,7 @@ export function getPlayerActions() {
         classRef: null,
       },
       type: PlayerActionTypes.BUILDABLE,
-      tooltip: "Removes a dice from the board.",
+      tooltip: "Removes a piece from the board. No refund.",
     },
     {
       code: "UPGRADES",

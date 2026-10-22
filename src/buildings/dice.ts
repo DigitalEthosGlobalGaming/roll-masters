@@ -331,7 +331,9 @@ export class Dice extends Building implements Serializable {
   }
 
   onTrigger() {
+    const wasRolling = this.rolling;
     this.rollDice();
+    if (!wasRolling && this.rolling) this.scene?.emit("tutorial-signal", "rolled:Dice" as any);
   }
 
   onBuild(): void {

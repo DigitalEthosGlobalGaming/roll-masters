@@ -19,7 +19,8 @@ import {
   PlayerActions,
   PlayerActionTypes,
 } from "./player-actions";
-import { Tooltip } from "./player-tooltip";
+import { actionTooltip } from "./player-tooltip";
+import type { Tooltip } from "./player-tooltip";
 import { clampCameraZoom, zoomAnchorOffset } from "./camera-controls";
 
 type MouseState = {
@@ -89,13 +90,7 @@ export class PlayerBase extends ex.Actor implements InputHandler {
     this.playerUi.dirty = true;
     this.scene?.emit("ui-state-changed");
     let relatedAction = getPlayerActions().find((a) => a.code == value);
-    if (relatedAction != null) {
-      this.showTooltip({
-        code: relatedAction.code,
-        title: relatedAction.name,
-        description: relatedAction.tooltip,
-      });
-    }
+    if (relatedAction != null) this.showTooltip(actionTooltip(relatedAction));
     this.getScene().save();
   }
 
@@ -304,6 +299,8 @@ export class PlayerBase extends ex.Actor implements InputHandler {
         (a) => a.code == this.currentAction
       );
       if (currentAction?.type == PlayerActionTypes.BUILDABLE) {
+        const occupied = space.children.some(item => item instanceof Building);
+        if (!occupied && !this.allowsPlacement(space)) return;
         if (this.currentAction == "REMOVE") {
           this.removeBuildable(space.globalPos);
         } else {
@@ -382,6 +379,7 @@ export class PlayerBase extends ex.Actor implements InputHandler {
             newDice.rollSpeed = 1;
             space.addChild(newDice);
             newDice.build();
+            this.scene?.emit("tutorial-signal", `built:${newDice.friendlyName}` as any);
           } else {
             if (action.building.classRef == null) {
               this.removeBuildable(space.globalPos);
@@ -389,15 +387,47 @@ export class PlayerBase extends ex.Actor implements InputHandler {
               const building = new action.building.classRef();
               space.addChild(building);
               building.build();
+              this.scene?.emit("tutorial-signal", `built:${building.friendlyName}` as any);
             }
           }
         } else {
-          this.playerUi.notify("Not enough gold. Need " + cost.toLocaleString("en") + " gold.");
+          this.playerUi.notify("Not enough gold. Need " + cost.toLocaleString("en") + " gold.", "warning");
         }
       }
     } else {
       existingBuilding.trigger();
     }
+  }
+
+  /** Live buildings by display name; the tutorial uses this to resume mid-way. */
+  countBuildings(friendlyName: string): number {
+    return this.scene?.entities.filter(e => e instanceof Building && e.friendlyName === friendlyName && !e.isKilled()).length ?? 0;
+  }
+
+  /** World-space centre of a tutorial pointer target, or null when none applies. */
+  tutorialTarget(kind: "spot" | "dice" | "pawn-spot" | "pawn"): ex.Vector | null {
+    const grid = this.getScene().gridSystem;
+    if (grid == null) return null;
+    const cellCenter = (x: number, y: number) => grid.getSpaceBounds(ex.vec(x, y)).center;
+    if (kind === "spot") return cellCenter(Math.floor(grid.size.x / 2), Math.floor(grid.size.y / 2));
+    if (kind === "pawn") return this.scene?.entities.find((e): e is Building => e instanceof Building && e.friendlyName === "Pawn" && !e.isKilled())?.globalPos ?? null;
+    const dice = this.scene?.entities.find((e): e is Dice => e instanceof Dice && !e.isKilled());
+    const cell = dice?.gridPos;
+    if (dice == null || cell == null) return null;
+    if (kind === "dice") return dice.globalPos;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const space = grid.getSpace(ex.vec(cell.x + dx, cell.y + dy));
+      if (space != null && !space.children.some(child => child instanceof Building)) return cellCenter(cell.x + dx, cell.y + dy);
+    }
+    return null;
+  }
+
+  /** While set, building and removal are refused on any square it rejects (tutorial). */
+  placementGuard: ((space: GridSpace) => boolean) | null = null;
+  private allowsPlacement(space: GridSpace): boolean {
+    if (this.placementGuard == null || this.placementGuard(space)) return true;
+    this.playerUi.notify("Place it on the glowing square.", "warning");
+    return false;
   }
 
   tooltips: Tooltip[] = [];
@@ -411,13 +441,7 @@ export class PlayerBase extends ex.Actor implements InputHandler {
     }
 
     let relatedAction = getPlayerActions().find((a) => a.code == this.currentAction);
-    if (relatedAction != null) {
-      ui.tooltip = {
-        code: relatedAction.code,
-        title: relatedAction.name,
-        description: relatedAction.tooltip,
-      };
-    } else ui.tooltip = null;
+    ui.tooltip = relatedAction != null ? actionTooltip(relatedAction) : null;
   }
 
   clearTooltips() {

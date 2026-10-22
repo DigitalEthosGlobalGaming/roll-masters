@@ -6,6 +6,7 @@ import type { PlayerAction } from "./player-actions";
 import { Level } from "@src/level";
 import { formatGold, formatCompactGold } from "@src/ui/game-presentation";
 import { Resources } from "@src/resources";
+import { actionTooltip } from "./player-tooltip";
 
 export class PlayerActionButton extends Button {
   action?: PlayerAction;
@@ -33,7 +34,6 @@ export class PlayerActionsUi extends Panel {
       button.icon = { imageSource: action.image, width: 32, height: 32 };
       button.iconPlacement = "above";
       button.onClick = () => this.changeAction(action);
-      button.tooltip = { code: action.code, title: action.name, description: action.tooltip };
       this.buttons.push(button);
     }
     this.build = this.addPanel("build", Button); this.build.text = "Build";
@@ -46,8 +46,10 @@ export class PlayerActionsUi extends Panel {
     for (const button of this.buttons) {
       const action = button.action!;
       if (action.type !== PlayerActionTypes.BUILDABLE) continue;
-      button.collapsed = this.compact && action.code !== "NEWDICE" && action.code !== "REMOVE";
+      // Pieces stay hidden until unlocked, so the toolbar never spoils what is ahead.
+      button.collapsed = !action.unlocked || this.compact && action.code !== "NEWDICE" && action.code !== "REMOVE";
       button.disabled = !action.unlocked;
+      button.tooltip = actionTooltip(action);
       button.selected = action.code === this.player?.currentAction;
       const name = action.code === "NEWKNIGHT" ? "Knight" : action.name.replace("Buy ", "");
       button.text = action.code === "REMOVE" ? "Remove" : action.unlocked ? formatCompactGold(action.building.cost()) : "Locked";
@@ -62,7 +64,7 @@ export class PlayerActionsUi extends Panel {
   override onLayout(): void {
     const order = this.compact
       ? [this.roll, this.getPanel<Button>("NEWDICE")!, this.build, this.getPanel<Button>("REMOVE")!]
-      : [this.roll, ...this.buttons];
+      : [this.roll, ...this.buttons.filter(button => !button.collapsed)];
     const slot = Math.min(100, (this.width - 8) / order.length);
     order.forEach((button, index) => {
       button.fontSize = 14;

@@ -133,7 +133,10 @@ addUpdate("2026-10-22", "Features", "Buttons now have crisp drawn gold frames, g
 addUpdate("2026-10-22", "Features", "Added separate music and sound effects volume sliders, with saved levels and live audio updates.");
 addUpdate("2026-10-22", "Features", "Credits and release notes now use the game menu styling and mobile paging. Removed the UI gallery entry from the main menu.");
 
-export const gameUpdates = Object.values(updates)
+addUpdate("2026-10-23", "Features", "New interactive tutorial teaches placing dice, rolling them, and building Pawns, with guided highlights. Replay it any time from Menu.");
+addUpdate("2026-10-23", "Features", "Tooltips are now cards above the toolbar showing each piece's cost and what you still need, and they pop in unless motion is reduced.");
+
+export const gameUpdates =Object.values(updates)
   .filter((item) => item.date >= showAfter)
   .sort((a, b) => {
     return -a.date

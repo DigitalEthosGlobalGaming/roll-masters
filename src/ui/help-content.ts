@@ -32,6 +32,8 @@ export class HelpCard extends Panel {
   }
   override onLayout(): void {
     const padding = this.screenHeight < 450 ? 12 : 16;
+    // Word wrapping uses a little more height; short landscape screens get slightly smaller body text.
+    this.description.fontSize = this.screenHeight < 450 ? 15 : 17;
     for (const label of [this.title, this.description]) label.maxWidth = Math.max(1, this.availableWidth - padding * 2);
     this.size = ex.vec(this.availableWidth, padding * 2 + this.title.height + 8 + this.description.height);
     this.title.topLeft = ex.vec(-this.halfWidth + padding, -this.halfHeight + padding);

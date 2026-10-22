@@ -61,9 +61,15 @@ export class Label extends Panel {
     const lines: string[] = [];
     for (const line of this.text.replaceAll(moneyMarker, moneySpace).split("\n")) {
       let current = "";
-      for (const char of line) {
-        if (current && this.measureWidth(current + char) > this.maxWidth) { lines.push(current); current = ""; }
-        current += char;
+      // Wrap at spaces; only a single word wider than the label is split mid-word.
+      for (const word of line.split(" ")) {
+        const candidate = current ? `${current} ${word}` : word;
+        if (this.measureWidth(candidate) <= this.maxWidth) { current = candidate; continue; }
+        if (current) { lines.push(current); current = ""; }
+        for (const char of word) {
+          if (current && this.measureWidth(current + char) > this.maxWidth) { lines.push(current); current = ""; }
+          current += char;
+        }
       }
       lines.push(current);
     }

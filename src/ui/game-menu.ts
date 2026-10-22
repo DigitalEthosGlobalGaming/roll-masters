@@ -8,7 +8,7 @@ import { ScrollPanel } from "./scroll-panel";
 import { NavigationStack } from "./navigation-stack";
 import { addHelpContent, configureHelpNavigation, wrapContent } from "./help-content";
 import { addSettingsContent } from "./settings-content";
-import { buildRequirements, formatGold } from "./game-presentation";
+import { formatGold } from "./game-presentation";
 import { getPlayerActions, PlayerActionTypes } from "@src/player-systems/player-actions";
 import { Level } from "@src/level";
 
@@ -55,6 +55,8 @@ export class GameMenu extends Modal {
     for (const [text, page] of [["Board view", "view"], ["Help", "help"], ["Settings", "settings"]] as const) {
       const button = menu.addPanel(page, Button); button.text = text; button.onClick = () => this.open(page);
     }
+    const tutorial = menu.addPanel("tutorial", Button); tutorial.text = "Replay tutorial";
+    tutorial.onClick = () => { this.onClose(); this.player?.playerUi.startTutorial(); };
     const resume = menu.addPanel("resume", Button); resume.text = "Resume"; resume.onClick = () => this.onClose();
     const title = menu.addPanel("title", Button); title.text = "Save and return to title";
     title.onClick = () => { this.player?.getScene().save(); this.onClose(); this.scene?.engine.goToScene("WelcomeScene"); };
@@ -92,9 +94,11 @@ export class GameMenu extends Modal {
       if (!row || action.type !== PlayerActionTypes.BUILDABLE) continue;
       const button = row.getPanel<Button>("choose")!;
       const name = action.code === "NEWKNIGHT" ? "Knight" : action.name.replace("Buy ", "");
-      button.text = action.unlocked ? `${name}\n${formatGold(action.building.cost())} gold` : `${name}\nLocked`;
+      // Locked pieces stay hidden so the menu never spoils what research will reveal.
+      row.collapsed = !action.unlocked;
+      button.text = `${name}\n${formatGold(action.building.cost())} gold`;
       button.disabled = !action.unlocked;
-      row.getPanel<Label>("description")!.text = action.unlocked ? action.tooltip : buildRequirements[action.code] ?? "Unlock through Research";
+      row.getPanel<Label>("description")!.text = action.tooltip;
     }
     super.onRefresh();
     if (this.lastPage !== page && this.scene instanceof Level) {

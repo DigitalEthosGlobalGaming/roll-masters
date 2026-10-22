@@ -1,12 +1,9 @@
-import { Label } from "@src/ui/elements/label";
-export type Tooltip = { code: string; title: string; description: string };
-export class PlayerTooltip extends Label {
-  private _tooltip: Tooltip | null = null;
-  get tooltip(): Tooltip | null { return this._tooltip; }
-  set tooltip(value: Tooltip | null) {
-    this._tooltip = value;
-    this.visible = value !== null;
-    this.text = value ? `${value.title}\n${value.description}` : "";
-    this.align = "left";
-  }
+import type { PlayerAction } from "./player-actions";
+
+export type Tooltip = { code: string; title: string; description: string; cost?: number };
+
+/** Build the tooltip for a toolbar action; placing tools carry their gold cost. */
+export function actionTooltip(action: PlayerAction): Tooltip {
+  const cost = "building" in action && action.code !== "REMOVE" ? action.building.cost() : undefined;
+  return { code: action.code, title: action.name, description: action.tooltip, cost };
 }
