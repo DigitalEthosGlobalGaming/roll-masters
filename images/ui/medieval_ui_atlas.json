@@ -1,0 +1,19 @@
+{
+  "image": "medieval_ui_atlas.png",
+  "width": 128,
+  "height": 64,
+  "frames": {
+    "Panel": {
+      "image": "medieval_panel.png",
+      "rect": [0, 0, 64, 64],
+      "nineSlice": { "leftMargin": 8, "topMargin": 8, "rightMargin": 8, "bottomMargin": 8 },
+      "centerColor": "#241b16"
+    },
+    "Button": {
+      "image": "medieval_button.png",
+      "rect": [64, 0, 64, 64],
+      "nineSlice": { "leftMargin": 4, "topMargin": 4, "rightMargin": 4, "bottomMargin": 4 },
+      "centerColor": "#342018"
+    }
+  }
+}
